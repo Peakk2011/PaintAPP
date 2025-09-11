@@ -19,7 +19,6 @@ const windowSize = {
 };
 
 let mainWindow;
-let splashWindow;
 
 const createWindow = async () => {
   const Store = (await import('electron-store')).default;
@@ -76,10 +75,6 @@ const createWindow = async () => {
   });
 
   mainWindow.once('ready-to-show', () => {
-    if (splashWindow) {
-      splashWindow.close();
-      splashWindow = null;
-    }
     mainWindow.show();
     if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
       mainWindow.webContents.openDevTools();
@@ -106,23 +101,7 @@ const createWindow = async () => {
   return mainWindow;
 };
 
-const createSplashWindow = () => {
-  splashWindow = new BrowserWindow({
-    width: 300,
-    height: 400,
-    transparent: true,
-    frame: false,
-    alwaysOnTop: true,
-    center: true,
-    resizable: false,
-    movable: false,
-  });
-  splashWindow.loadFile(path.join(__dirname, 'splash.html'));
-};
-
 app.whenReady().then(async () => {
-  createSplashWindow();
-
   if (process.platform === 'darwin') {
     const menuTemplate = createMacMenu(createWindow, windowSize);
     const menu = Menu.buildFromTemplate(menuTemplate);
