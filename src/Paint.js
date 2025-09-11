@@ -100,7 +100,7 @@ const saveToHistory = () => {
         if (now - lastState.timestamp < 500) {
             historyStack[historyIndex] = {
                 imageData: drawingCtx.getImageData(0, 0, drawingCanvas.width, drawingCanvas.height),
-                stickyNotes: JSON.parse(JSON.stringify(stickyNotes)), 
+                stickyNotes: JSON.parse(JSON.stringify(stickyNotes)),
                 timestamp: now
             };
             return;
@@ -503,7 +503,7 @@ const stopDrawing = () => {
         previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
         requestRedraw();
         points = [];
-        saveProject(); 
+        saveProject();
         saveToHistory();
     }
 };
@@ -768,9 +768,9 @@ const initializePaint = () => {
 
     canvasContainer.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        if (window.electron && window.electron.ipcRenderer) {
+        if (window.Electron && window.Electron.ipcRenderer) {
             const currentBrush = brushType ? brushType.value : 'smooth';
-            window.electron.ipcRenderer.send('show-context-menu', currentBrush);
+            window.Electron.ipcRenderer.send('show-context-menu', currentBrush);
         }
     });
 
@@ -809,8 +809,8 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', adj
 
 // IPC Main process direct
 
-if (window.electron && window.electron.ipcRenderer) {
-    window.electron.ipcRenderer.on('trigger-action', (action, value) => {
+if (window.Electron && window.Electron.ipcRenderer) {
+    window.Electron.ipcRenderer.on('trigger-action', (action, value) => {
         switch (action) {
             case 'undo':
                 undo();
@@ -844,4 +844,21 @@ if (window.electron && window.electron.ipcRenderer) {
                 break;
         }
     });
+}
+
+// Platform direct
+
+if (window.Electron) {
+    const platform = window.Electron.platform;
+    const isMac = window.Electron.isMac;
+    const isWindows = window.Electron.isWindows;
+
+    if (platform) {
+        document.body.classList.add(`platform-${platform}`);
+    }
+    if (isMac) {
+        document.body.classList.add('mac');
+    } else if (isWindows) {
+        document.body.classList.add('windows');
+    }
 }

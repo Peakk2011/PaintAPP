@@ -9,4 +9,9 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.send(channel, ...args);
     }
   },
+
+  platform: process.platform,
+  isMac: process.platform === 'darwin',
+  isWindows: process.platform === 'win32',
+  isLinux: process.platform === 'linux'
 });
