@@ -1,0 +1,113 @@
+<!-- 
+    Essential app | Paint app
+    Made by Mint teams
+    Samuel lakamo , Peakk2011(Peakk)
+    Version 1.0 First release
+    
+    Updated: 2025-23-08
+    With Seprate plain PaintAPP app
+    License: MIT
+    GitHub: Peakk2011/Essential-app
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;">
+    <title>PaintAPP</title>
+    <link rel="stylesheet" href="./Paint.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./Reset.css" crossorigin="anonymous" />
+    <!-- Material icons -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+</head>
+
+<body>
+
+    <!-- import Navbar as <nav> -->
+
+    <nav id="MainNavbar">
+        <div id="Titlebar-Dragable"></div>
+        <div class="contentTEXT">
+            <h1>Paint app</h1>
+        </div>
+        <ul>
+            <li id="GotoHomePage"><a href="index.html">
+                    <span class="material-symbols-outlined">home</span>
+                </a></li>
+            <li id="KeepONtop"><a href="javascript:void(0)">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
+                        fill="var(--theme-links)">
+                        <path
+                            d="M204-129q-30.94 0-52.97-22.03Q129-173.06 129-204v-552q0-30.94 22.03-52.97Q173.06-831 204-831h273v75H204v552h552v-273h75v273q0 30.94-22.03 52.97Q786.94-129 756-129H204Zm185.5-208L337-389.5 703.5-756H552v-75h279v279h-75v-151.5L389.5-337Z" />
+                    </svg>
+                </a></li>
+            <div id="MainLINKS">
+                <li><a href="Todolist.html" class="requestShiftkeyHolder">Todo list</a></li>
+                <li><a href="Time.html" id="draggable" draggable="true" class="requestShiftkeyHolder">Clock</a></li>
+                <li><a href="calc.html" draggable="false" class="requestShiftkeyHolder">Calculator</a></li>
+                <li><a href="Notes.html" draggable="false" class="requestShiftkeyHolder">Notes</a></li>
+                <li id="CurrentPage"><a href="#" draggable="false" class="requestShiftkeyHolder">Paint</a></li>
+            </div>
+        </ul>
+    </nav>
+
+    <!-- Content -->
+
+    <div class="toolbar">
+        <div class="control">
+            <label class="color-picker">
+                <span id="color-picker-trigger" class="color-preview" style="background-color: #000000;"></span>
+            </label>
+            <div id="iro-picker-container" style="
+                display: none;
+                position: absolute;
+                z-index: 100;
+                background: var(--toolbar-bg);
+                padding: 16px;
+                border-radius: 12px;
+                outline: var(--theme-border) solid 1.7px;
+                bottom: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                min-width: 310px;"></div>
+        </div>
+        
+        <div class="control" id="brushSizeControl">
+            <input type="range" id="brushSize" min="1" max="50" value="5">
+            <span class="size-display" id="sizeDisplay">5px</span>
+        </div>
+
+        <div class="control">
+            <select id="brushType" title="Brush Type">
+                <option value="smooth">Smooth</option>
+                <option value="texture">Pen Style</option>
+            </select>
+        </div>
+
+        <div class="control">
+            <select id="exportFormat" title="Export Format" aria-label="Export Format">
+                <option value="png">PNG</option>
+                <option value="jpg">JPG</option>
+                <option value="webp">WebP</option>
+            </select>
+        </div>
+
+        <button id="clearBtn" class="clear-btn">Clear</button>
+        <button id="saveBtn">Save</button>
+    </div>
+
+    <div id="canvasContainer">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="AnimBackgroundBlur" id="AnimBackgroundBlur"></div>
+
+    <script src="./Paint.js" defer></script>
+</body>
+
+</html>

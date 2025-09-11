@@ -1,0 +1,245 @@
+/* 
+    PaintAPP/Paint.css
+
+    Essential app | Paint app
+    Made by Mint teams
+    Samuel lakamo , Peakk2011(Peakk)
+    Version 1.0 First release
+    
+    Updated: 2025-23-08
+    With Seprate plain PaintAPP app
+    License: MIT
+    GitHub: Peakk2011/Essential-app
+*/
+
+:root {
+    --toolbar-bg: #ffffff;
+    --toolbar-border: #ddd;
+    --toolbar-shadow: rgba(0, 0, 0, 0.1);
+    --text-primary: #333;
+    --text-secondary: #666;
+    --input-border: #ccc;
+    --input-bg: #ffffff;
+    --canvas-bg: var(--theme-bg);
+}
+
+[data-theme="dark"] {
+    --toolbar-bg: #080808;
+    --toolbar-border: #444;
+    --toolbar-shadow: rgba(0, 0, 0, 0.3);
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --input-border: #555;
+    --input-bg: #3d3d3d;
+    --canvas-bg: var(--theme-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --toolbar-bg: #080808;
+        --toolbar-border: #444;
+        --toolbar-shadow: rgba(0, 0, 0, 0.3);
+        --text-primary: #ffffff;
+        --text-secondary: #cccccc;
+        --input-border: #555;
+        --input-bg: #3d3d3d;
+        --canvas-bg: var(--theme-bg);
+    }
+}
+
+#GotoHomePage {
+    border-bottom: var(--TitlebarColorBorder);
+    background-color: var(--TitlebarColor) !important;
+    border-right: none !important;
+}
+
+#Titlebar-Dragable {
+    -webkit-app-region: drag;
+    width: 100%;
+    height: 45px;   
+    position: fixed;
+    top: 0;
+}
+
+.contentTEXT {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+}
+
+.contentTEXT h1 {
+    font-family: var(--font-text), sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+    transform: translate(0px, 1.25px);
+    color: var(--text-primary);
+}
+
+#canvasContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--canvas-bg);
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    transform-origin: 0 0;
+    background-color: var(--canvas-bg); 
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.toolbar {
+    position: fixed;
+    bottom: 22.5px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 44px;
+    width: fit-content;
+    background: var(--toolbar-bg);
+    outline: var(--theme-border) solid 1.5px;
+    z-index: 1000;
+    padding: 8px;
+    gap: 2px;
+    display: flex;
+    align-items: center;
+    border-radius: 100vmax;
+}
+
+.control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+select {
+    padding: 0.5rem 0.8rem;
+    border-radius: 100vmax;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    text-align: center;
+    border: solid 0px transparent;
+    outline: solid 0px transparent;
+    background-color: transparent;
+    transform: translateY(0.5px);
+    transition: background 0.2s;
+}
+
+select:hover {
+    background-color: var(--PrimaryButtonsColors);
+}
+
+.color-picker {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.color-picker input[type="color"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 30px;
+    height: 30px;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.color-picker .color-preview {
+    display: block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: solid 2px var(--theme-border);
+    background-color: #000000;
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.color-picker:hover .color-preview {
+    filter: brightness(1.2);
+}
+
+input[type="range"] {
+    width: 60px;
+    margin-left: 0.8rem;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    background-color: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    height: 8px;
+    background: var(--input-border);
+    border-radius: 100vmax;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--theme-accent);
+    border-radius: 50%;
+    margin-top: -4.25px;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    background: var(--theme-accent);
+    color: #000000;
+    border: none;
+    border-radius: 100vmax;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.clear-btn {
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.clear-btn:hover {
+    background-color: var(--PrimaryButtonsColors);
+}
+
+.size-display {
+    display: none;
+}
+
+@media (max-width: 340px) {
+    .contentTEXT {
+        left: 17px;
+        transform: translateX(0px);
+    }
+
+    #GotoHomePage {
+        display: none;
+    }
+}
+
+@media (max-width: 430px) {
+    #brushSizeControl {
+        display: none;
+    }
+}
