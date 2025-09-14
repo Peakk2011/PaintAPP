@@ -73,6 +73,10 @@
     display: none;
 }
 
+.platform-mac, .contentTEXT {
+    display: block;
+}
+
 .contentTEXT h1 {
     font-family: var(--font-text), sans-serif;
     font-weight: 400;

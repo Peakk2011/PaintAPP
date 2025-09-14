@@ -12,26 +12,29 @@
     GitHub: Peakk2011/Essential-app
 */
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const canvasContainer = document.getElementById('canvasContainer');
+const initSVG = () => {
+    if (svg) svg.remove();
 
-const drawingCanvas = document.createElement('canvas');
-const drawingCtx = drawingCanvas.getContext('2d', { willReadFrequently: true });
-const previewCanvas = document.createElement('canvas');
-const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.left = '0';
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.pointerEvents = 'none';
+    svg.style.zIndex = '10';
 
-const colorPickerTrigger = document.getElementById('color-picker-trigger');
-const iroPickerContainer = document.getElementById('iro-picker-container');
+    svgGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    svg.appendChild(svgGroup);
+    canvasContainer.appendChild(svg);
+};
+
+// Global state variables
+let canvas, ctx, canvasContainer, drawingCanvas, drawingCtx, previewCanvas, previewCtx;
+let colorPickerTrigger, iroPickerContainer, sizePicker, sizeDisplay, brushType, exportFormat, clearBtn, saveBtn;
+let colorPicker;
+
 let brushColor = '#000000';
-
-const sizePicker = document.getElementById('brushSize');
-const sizeDisplay = document.getElementById('sizeDisplay');
-const brushType = document.getElementById('brushType');
-const exportFormat = document.getElementById('exportFormat');
-const clearBtn = document.getElementById('clearBtn');
-const saveBtn = document.getElementById('saveBtn');
-
 let autoSaveData = null;
 let lastSaveTime = 0;
 
@@ -39,36 +42,6 @@ let lastSaveTime = 0;
 let historyStack = [];
 let historyIndex = -1;
 const MAX_HISTORY = 20; // Adjusted for potentially large image data
-
-const colorPicker = new iro.ColorPicker(iroPickerContainer, {
-    width: 150,
-    borderWidth: 2,
-    borderColor: '#2e2e2e',
-    layoutDirection: 'horizontal',
-    layout: [
-        { component: iro.ui.Box, options: {} },
-        { component: iro.ui.Slider, options: { sliderType: 'hue' } },
-        { component: iro.ui.Slider, options: { sliderType: 'saturation' } },
-        { component: iro.ui.Slider, options: { sliderType: 'value' } }
-    ]
-});
-
-colorPicker.on('color:change', (color) => {
-    brushColor = color.hexString;
-    colorPickerTrigger.style.backgroundColor = brushColor;
-});
-
-colorPickerTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isVisible = iroPickerContainer.style.display === 'flex';
-    iroPickerContainer.style.display = isVisible ? 'none' : 'flex';
-});
-
-document.addEventListener('click', (e) => {
-    if (!iroPickerContainer.contains(e.target) && e.target !== colorPickerTrigger) {
-        iroPickerContainer.style.display = 'none';
-    }
-});
 
 let svg, svgGroup; // For sticky notes
 let isDrawing = false;
@@ -154,22 +127,27 @@ const redo = () => {
     }
 };
 
+const setupColorPicker = (data) => {
+    const colorPickerData = data.toolbar.controls.find(c => c.type === 'color-picker');
+    brushColor = colorPickerData.defaultColor;
 
-const initSVG = () => {
-    if (svg) svg.remove();
+    colorPicker = new iro.ColorPicker(iroPickerContainer, {
+        width: 150,
+        borderWidth: 2,
+        borderColor: '#2e2e2e',
+        layoutDirection: 'horizontal',
+        layout: [
+            { component: iro.ui.Box, options: {} },
+            { component: iro.ui.Slider, options: { sliderType: 'hue' } },
+            { component: iro.ui.Slider, options: { sliderType: 'saturation' } },
+            { component: iro.ui.Slider, options: { sliderType: 'value' } }
+        ]
+    });
 
-    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.style.position = 'absolute';
-    svg.style.top = '0';
-    svg.style.left = '0';
-    svg.style.width = '100%';
-    svg.style.height = '100%';
-    svg.style.pointerEvents = 'none';
-    svg.style.zIndex = '10';
-
-    svgGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    svg.appendChild(svgGroup);
-    canvasContainer.appendChild(svg);
+    colorPicker.on('color:change', (color) => {
+        brushColor = color.hexString;
+        colorPickerTrigger.style.backgroundColor = brushColor;
+    });
 };
 
 const setupCanvas = () => {
@@ -748,7 +726,28 @@ const adjustTheme = () => {
     colorPickerTrigger.style.backgroundColor = brushColor;
 };
 
-const initializePaint = () => {
+const initializePaint = (data) => {
+    // Assign DOM elements now that they are guaranteed to exist
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
+    canvasContainer = document.getElementById('canvasContainer');
+
+    drawingCanvas = document.createElement('canvas');
+    drawingCtx = drawingCanvas.getContext('2d', { willReadFrequently: true });
+    previewCanvas = document.createElement('canvas');
+    previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+
+    colorPickerTrigger = document.getElementById('color-picker-trigger');
+    iroPickerContainer = document.getElementById('iro-picker-container');
+    
+    sizePicker = document.getElementById('brushSize');
+    sizeDisplay = document.getElementById('sizeDisplay');
+    brushType = document.getElementById('brushType');
+    exportFormat = document.getElementById('exportFormat');
+    clearBtn = document.getElementById('clearBtn');
+    saveBtn = document.getElementById('saveBtn');
+
+    setupColorPicker(data);
     setupCanvas();
     loadProject();
 
@@ -780,6 +779,18 @@ const initializePaint = () => {
         lastMouseY = e.clientY - rect.top;
     });
 
+    colorPickerTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = iroPickerContainer.style.display === 'flex';
+        iroPickerContainer.style.display = isVisible ? 'none' : 'flex';
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!iroPickerContainer.contains(e.target) && e.target !== colorPickerTrigger) {
+            iroPickerContainer.style.display = 'none';
+        }
+    });
+
     if (clearBtn) clearBtn.addEventListener('click', clearCanvas);
     if (saveBtn) saveBtn.addEventListener('click', saveImage);
 
@@ -794,16 +805,15 @@ const initializePaint = () => {
     }
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializePaint);
-} else {
-    initializePaint();
-}
-
 const handleResize = () => {
     setupCanvas();
+    // Check if canvasContainer is initialized before proceeding
+    if (canvasContainer) {
+        setupCanvas();
+    }
 };
 
+// These listeners should be set up only once the app is initialized.
 window.addEventListener('resize', handleResize);
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', adjustTheme);
 

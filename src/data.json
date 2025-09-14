@@ -1,0 +1,66 @@
+ {
+  "pageTitle": "PaintAPP",
+  "headerTitle": "PaintAPP",
+  "navLinks": [
+    { "href": "Todolist.html", "text": "Todo list" },
+    { "href": "Time.html", "text": "Clock" },
+    { "href": "calc.html", "text": "Calculator" },
+    { "href": "Notes.html", "text": "Notes" },
+    { "href": "#", "text": "Paint", "isCurrent": true }
+  ],
+  "toolbar": {
+    "controls": [
+      {
+        "type": "color-picker",
+        "id": "colorPickerControl",
+        "labelClass": "color-picker",
+        "triggerId": "color-picker-trigger",
+        "previewClass": "color-preview",
+        "defaultColor": "#000000",
+        "pickerContainerId": "iro-picker-container"
+      },
+      {
+        "type": "range",
+        "id": "brushSizeControl",
+        "inputId": "brushSize",
+        "min": "1",
+        "max": "50",
+        "value": "5",
+        "displayId": "sizeDisplay",
+        "displayClass": "size-display",
+        "displayText": "5px"
+      },
+      {
+        "type": "select",
+        "id": "brushType",
+        "title": "Brush Type",
+        "options": [
+          { "value": "smooth", "text": "Smooth" },
+          { "value": "texture", "text": "Pen Style" }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "exportFormat",
+        "title": "Export Format",
+        "ariaLabel": "Export Format",
+        "options": [
+          { "value": "png", "text": "PNG" },
+          { "value": "jpg", "text": "JPG" },
+          { "value": "webp", "text": "WebP" }
+        ]
+      }
+    ],
+    "buttons": [
+      {
+        "id": "clearBtn",
+        "class": "clear-btn",
+        "text": "Clear"
+      },
+      {
+        "id": "saveBtn",
+        "text": "Save"
+      }
+    ]
+  }
+}
