@@ -1,3 +1,5 @@
+<img src="./assets/paintAPP.iconset/icon_256x256.png" />
+
 # Paint application
 A Paint Electron lightweight application
 
