@@ -77,26 +77,65 @@ Dark/light theme adaptation<br>
 
 ### 📦 Root Files
 ```
-PAINT_APP/
-├── assets/             # Static resources
-├── node_modules/       # Dependencies (auto-generated)
-├── out/                # Build output
+PAINTAPP-DESKTOP/
+├── assets/             # Assets folder stored icons app folder
+├── node_modules/       # App module
+├── out/                # Build-file
 ├── src/                # Source code
-├── .gitignore          # Git ignore rules
-├── forge.config.js     # Electron Forge configuration
-├── package-lock.json   # Dependency lock file
-└── package.json        # Project configuration
+├── .gitignore          
+├── forge.config.js     # Electron Forge Config
+├── package-lock.json   
+├── package.json        # JSON module configulation file
+└── README.md           # Documents
 ```
 
 ### 📝 Source Code Flow .src/
 ```
 src/
-├── index.html       # Main HTML entry point
-├── main.js          # Electron main process
-├── menu.js          # Application menu setup
-├── paint.css        # Styling for paint canvas
-├── paint.js         # Core painting logic
-├── preload.js       # Electron preload script
-├── reset.css        # CSS reset
-└── splash.html      # Loading/splash screen
+├── data-loader.js      # JSON File data loader
+├── data.json           # PaintAPP Data File (JSON)
+├── index.html          # Main HTML File
+├── main.js             # Electron Main Process
+├── menu.js             # Native macOS menubar
+├── Paint.css           # PaintAPP styling
+├── Paint.js            # PaintAPP file logic (Paint app entry file)
+├── preload.js          # Electron preload script
+└── Reset.css           # CSS Reset
+```
+
+## HTML Data flow structure
+
+## Process
+1. Load JSON -> `Fetch('./data.json');`
+2. Create DOM -> Create HTML Elements from JSON
+3. Connect Logic -> Call `initializePaint(data)`
+
+## UI Elements
+### 1. Navigation Links
+```javascript
+data.navLinks.forEach(link => {
+  const li = document.createElement('li');
+  if (link.isCurrent) li.id = 'CurrentPage';  // Current page
+  const a = document.createElement('a');
+  a.href = link.href;
+  a.textContent = link.text;
+  // Create menu
+});
+```
+### 2. Toolbar Controls
+```javascript
+switch (controlInfo.type) {
+  case 'color-picker':    // Picker
+  case 'range':           // Slide bar
+  case 'select':          // Dropdown menu
+}
+```
+### 3. Buttons
+```javascript
+// Fetch from JSON file
+toolbarData.buttons.forEach(buttonInfo => {
+  const button = document.createElement('button');
+  button.id = buttonInfo.id;
+  button.textContent = buttonInfo.text;
+});
 ```
