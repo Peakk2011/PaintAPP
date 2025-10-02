@@ -1,4 +1,4 @@
-<img src="./assets/paintAPP.iconset/icon_256x256.png" width="200"/>
+<img src="./assets/paintAPP.iconset/icon_256x256.png" width="150"/>
 
 # Paint application
 A Paint Electron lightweight application
