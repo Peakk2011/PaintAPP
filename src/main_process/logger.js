@@ -1,0 +1,90 @@
+/**
+ * @file Structured logger for the main process.
+ * @author Peakk2011 <peakk3984@gmail.com>
+ */
+
+import { app } from 'electron';
+
+/**
+ * Log levels enumeration
+ */
+export const LogLevel = {
+    INFO: 'INFO',
+    WARN: 'WARN',
+    ERROR: 'ERROR',
+    DEBUG: 'DEBUG'
+};
+
+/**
+ * Create formatted log message
+ * @param {string} level - Log level
+ * @param {string} message - Log message
+ * @returns {string} Formatted log string
+ */
+const formatLogMessage = (level, message) => {
+    const timestamp = new Date().toISOString();
+    return `PaintAPP [${timestamp}] [${level}] ${message}`;
+};
+
+/**
+ * Main process logger
+ */
+export const logger = {
+    /**
+     * Log info level message
+     * @param {string} message - Log message
+     * @param {any} data - Additional data
+     */
+    info: (message, data = {}) => {
+        const logMessage = formatLogMessage(LogLevel.INFO, message);
+        if (Object.keys(data).length > 0) {
+            console.log(logMessage, data);
+        } else {
+            console.log(logMessage);
+        }
+    },
+
+    /**
+     * Log warning level message
+     * @param {string} message - Log message
+     * @param {any} data - Additional data
+     */
+    warn: (message, data = {}) => {
+        const logMessage = formatLogMessage(LogLevel.WARN, message);
+        if (Object.keys(data).length > 0) {
+            console.warn(logMessage, data);
+        } else {
+            console.warn(logMessage);
+        }
+    },
+
+    /**
+     * Log error level message
+     * @param {string} message - Log message
+     * @param {Error|any} error - Error object or additional data
+     */
+    error: (message, error) => {
+        const logMessage = formatLogMessage(LogLevel.ERROR, message);
+        if (error) {
+            console.error(logMessage, error);
+        } else {
+            console.error(logMessage);
+        }
+    },
+
+    /**
+     * Log debug level message (only in development mode)
+     * @param {string} message - Log message
+     * @param {any} data - Additional data
+     */
+    debug: (message, data = {}) => {
+        if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+            const logMessage = formatLogMessage(LogLevel.DEBUG, message);
+            if (Object.keys(data).length > 0) {
+                console.debug(logMessage, data);
+            } else {
+                console.debug(logMessage);
+            }
+        }
+    }
+};
