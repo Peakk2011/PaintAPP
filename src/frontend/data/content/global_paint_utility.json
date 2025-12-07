@@ -1,0 +1,49 @@
+{
+  "canvas": null,
+  "ctx": null,
+  "canvasContainer": null,
+  "drawingCanvas": null,
+  "drawingCtx": null,
+  "previewCanvas": null,
+  "previewCtx": null,
+
+  "colorPickerTrigger": null,
+  "iroPickerContainer": null,
+  "sizePicker": null,
+  "sizeDisplay": null,
+  "brushType": null,
+  "exportFormat": null,
+  "clearBtn": null,
+  "saveBtn": null,
+  "colorPicker": null,
+
+  "brushColor": "#000000",
+
+  "historyStack": [],
+  "historyIndex": -1,
+
+  "svg": null,
+  "svgGroup": null,
+
+  "isDrawing": false,
+  "points": [],
+
+  "panX": 0,
+  "panY": 0,
+  "scale": 1,
+
+  "isInitialized": false,
+  "clickCount": 0,
+  "clickTimer": null,
+
+  "canvasWidth": 7680,
+  "canvasHeight": 4320,
+
+  "stickyNotes": [],
+  "isDraggingSticky": false,
+
+  "lastMouseX": 0,
+  "lastMouseY": 0,
+
+  "devicePixelRatio": 1
+}

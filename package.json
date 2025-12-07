@@ -1,7 +1,7 @@
 {
   "name": "paintapp",
   "productName": "PaintAPP",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "PaintAPP Made By Mint Teams",
   "main": "src/main.js",
   "type": "module",

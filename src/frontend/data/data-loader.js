@@ -1,3 +1,5 @@
+import { fetchJSON } from '../utils/fetch.js';
+
 /**
  * A utility function to create an HTML element with specified options.
  * @param {keyof HTMLElementTagNameMap} tag - The HTML tag name for the element.
@@ -224,12 +226,10 @@ const createNavigation = (navLinks) => {
  */
 const initApplication = async () => {
     try {
-        const response = await fetch('./frontend/data/data.json');
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
+        const data = await fetchJSON('/src/frontend/data/content/data.json', {
+            cache: true,
+            retry: 2
+        });
 
         // Set page metadata
         document.title = data.pageTitle;
@@ -241,7 +241,7 @@ const initApplication = async () => {
         // Create toolbar
         createToolbar(data.toolbar);
 
-        // Initialize paint application if function exists
+        // Initialize paint application if function exists from `../paint/paint.js`
         if (typeof initializePaint === 'function') {
             initializePaint(data);
         }
