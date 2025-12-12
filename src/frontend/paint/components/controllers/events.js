@@ -5,7 +5,7 @@ import { handleKeyboard } from './keyboard.js';
 import { clearCanvas, saveImage } from './files.js';
 import { adjustTheme } from '../core/tools.js';
 
-export function setupEventListeners() {
+export const setupEventListeners = () => {
     const state = getState();
     const container = state.canvasContainer;
 
@@ -83,7 +83,7 @@ export function setupEventListeners() {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', adjustTheme);
 }
 
-function handleTouch(e) {
+const handleTouch = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
     const mouseEvent = {
@@ -97,7 +97,7 @@ function handleTouch(e) {
     startDrawing(mouseEvent);
 }
 
-function handleTouchMove(e) {
+const handleTouchMove = (e) => {
     e.preventDefault();
     const touch = e.touches[0];
     const mouseEvent = {
@@ -107,7 +107,7 @@ function handleTouchMove(e) {
     draw(mouseEvent);
 }
 
-function handleResize() {
+const handleResize = () => {
     if (typeof window.setupCanvas === 'function') {
         window.setupCanvas();
     }

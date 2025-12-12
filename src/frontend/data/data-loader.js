@@ -226,7 +226,7 @@ const createNavigation = (navLinks) => {
  */
 const initApplication = async () => {
     try {
-        const data = await fetchJSON('/src/frontend/data/content/data.json', {
+        const data = await fetchJSON('frontend/data/content/data.json', {
             cache: true,
             retry: 2
         });

@@ -3,15 +3,15 @@ import { fetchJSON } from '../../../utils/fetch.js';
 let config = null;
 let globalState = null;
 
-export async function loadConfiguration() {
+export const loadConfiguration = async () => {
     try {
         const results = await Promise.all([
-            fetchJSON('/src/frontend/data/content/paint_config.json', {
+            fetchJSON('frontend/data/content/paint_config.json', {
                 cache: true,
                 cacheTTL: 600000,
                 retry: 2
             }),
-            fetchJSON('/src/frontend/data/content/global_paint_utility.json', {
+            fetchJSON('frontend/data/content/global_paint_utility.json', {
                 cache: true,
                 cacheTTL: 600000,
                 retry: 2
@@ -39,10 +39,10 @@ export async function loadConfiguration() {
     }
 }
 
-export function getConfig() {
+export const getConfig = () => {
     return config;
 }
 
-export function getState() {
+export const getState = () => {
     return globalState;
 }

@@ -1,6 +1,6 @@
 import { getState, getConfig } from '../utils/config.js';
 
-export function setupCanvas() {
+export const setupCanvas = () => {
     const state = getState();
     const config = getConfig();
 
@@ -39,14 +39,14 @@ export function setupCanvas() {
     requestRedraw();
 }
 
-function updateCanvasSize(canvas, width, height, dpr) {
+const updateCanvasSize = (canvas, width, height, dpr) => {
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
 }
 
-export function initSVG() {
+export const initSVG = () => {
     const state = getState();
 
     if (state.svg) {
@@ -64,7 +64,7 @@ export function initSVG() {
     state.canvasContainer.appendChild(svg);
 }
 
-export function getCanvasCoords(e) {
+export const getCanvasCoords = (e) => {
     const state = getState();
     const rect = state.canvasContainer.getBoundingClientRect();
     return {
@@ -73,7 +73,7 @@ export function getCanvasCoords(e) {
     };
 }
 
-export function requestRedraw() {
+export const requestRedraw = () => {
     const state = getState();
     const config = getConfig();
     const ctx = state.ctx;

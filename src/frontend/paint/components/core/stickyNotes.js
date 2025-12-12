@@ -2,7 +2,7 @@ import { getState, getConfig } from '../utils/config.js';
 import { getCanvasCoords } from './canvas.js';
 import { saveToHistory, saveProject } from './history.js';
 
-export function createStickyNote(x, y, width, height) {
+export const createStickyNote = (x, y, width, height) => {
     const state = getState();
     const config = getConfig().sticky;
 
@@ -60,7 +60,7 @@ export function createStickyNote(x, y, width, height) {
     return stickyObj;
 }
 
-function setupStickyListeners(sticky) {
+const setupStickyListeners = (sticky) => {
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
     const state = getState();
@@ -104,7 +104,7 @@ function setupStickyListeners(sticky) {
     document.addEventListener('mouseup', onMouseUp);
 }
 
-function updateStickyPosition(sticky) {
+const updateStickyPosition = (sticky) => {
     const config = getConfig().sticky;
     sticky.rect.setAttribute('x', sticky.x);
     sticky.rect.setAttribute('y', sticky.y);
@@ -112,7 +112,7 @@ function updateStickyPosition(sticky) {
     sticky.textElement.setAttribute('y', sticky.y + config.TEXT_OFFSET_Y);
 }
 
-function startStickyEditing(sticky) {
+const startStickyEditing = (sticky) => {
     if (sticky.isEditing) return;
     sticky.isEditing = true;
 
@@ -140,7 +140,7 @@ function startStickyEditing(sticky) {
     textarea.focus();
 }
 
-export function removeAllStickyNotes() {
+export const removeAllStickyNotes = () => {
     const state = getState();
     state.stickyNotes.forEach(note => note.remove());
     state.stickyNotes = [];

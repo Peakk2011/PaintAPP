@@ -1,6 +1,6 @@
 import { getState, getConfig } from '../utils/config.js';
 
-export function setupColorPicker(data) {
+export const setupColorPicker = (data) => {
     const state = getState();
     const config = getConfig(); 
 
@@ -37,7 +37,7 @@ export function setupColorPicker(data) {
     });
 }
 
-export function adjustTheme() {
+export const adjustTheme = () => {
     const state = getState();
     const config = getConfig();
     const brushConfig = config.brush;

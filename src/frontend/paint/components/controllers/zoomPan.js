@@ -1,6 +1,6 @@
 import { getState, getConfig } from '../utils/config.js';
 
-export function handleWheel(e) {
+export const handleWheel = (e) => {
     e.preventDefault();
 
     const state = getState();
@@ -40,7 +40,7 @@ export function handleWheel(e) {
     }
 }
 
-function constrainPan(containerRect) {
+const constrainPan = (containerRect) => {
     const state = getState();
 
     const scaledWidth = state.canvasWidth * state.scale;
@@ -61,19 +61,19 @@ function constrainPan(containerRect) {
     }
 }
 
-export function zoomIn() {
+export const zoomIn = () => {
     const state = getState();
     const config = getConfig().constants;
     zoom(config.ZOOM_STEP, state.lastMouseX, state.lastMouseY);
 }
 
-export function zoomOut() {
+export const zoomOut = () => {
     const state = getState();
     const config = getConfig().constants;
     zoom(1 / config.ZOOM_STEP, state.lastMouseX, state.lastMouseY);
 }
 
-export function resetZoom() {
+export const resetZoom = () => {
     const state = getState();
 
     state.scale = 1;
@@ -86,7 +86,7 @@ export function resetZoom() {
     }
 }
 
-function zoom(delta, centerX, centerY) {
+const zoom = (delta, centerX, centerY) => {
     const state = getState();
     const config = getConfig().constants;
 

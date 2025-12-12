@@ -3,7 +3,7 @@ import { getState, getConfig } from '../utils/config.js';
 import { removeAllStickyNotes } from '../core/stickyNotes.js';
 import { saveToHistory } from '../core/history.js';
 
-export function clearCanvas() {
+export const clearCanvas = () => {
     const state = getState();
 
     state.drawingCtx.clearRect(
@@ -29,7 +29,7 @@ export function clearCanvas() {
     saveToHistory();
 }
 
-export function saveImage() {
+export const saveImage = () => {
     const state = getState();
     const config = getConfig();
 

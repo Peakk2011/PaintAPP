@@ -1,7 +1,7 @@
 // components/core/history.js
 import { getState, getConfig } from '../utils/config.js';
 
-export function saveToHistory() {
+export const saveToHistory = () => {
     const state = getState();
     const config = getConfig();
 
@@ -33,7 +33,7 @@ export function saveToHistory() {
     }
 }
 
-function createHistoryState(timestamp) {
+const createHistoryState = (timestamp) => {
     const state = getState();
 
     return {
@@ -47,7 +47,7 @@ function createHistoryState(timestamp) {
     };
 }
 
-export function undo() {
+export const undo = () => {
     const state = getState();
     if (state.historyIndex > 0) {
         state.historyIndex--;
@@ -55,7 +55,7 @@ export function undo() {
     }
 }
 
-export function redo() {
+export const redo = () => {
     const state = getState();
     const idx = state.historyIndex;
     const len = state.historyStack.length;
@@ -65,7 +65,7 @@ export function redo() {
     }
 }
 
-function restoreFromHistory(historyState) {
+const restoreFromHistory = (historyState) => {
     if (!historyState) return;
 
     const state = getState();
@@ -102,7 +102,7 @@ function restoreFromHistory(historyState) {
     }
 }
 
-export function saveProject() {
+export const saveProject = () => {
     const state = getState();
     const config = getConfig();
 
@@ -124,7 +124,7 @@ export function saveProject() {
     }
 }
 
-export function loadProject() {
+export const loadProject = () => {
     const state = getState();
     const config = getConfig();
 

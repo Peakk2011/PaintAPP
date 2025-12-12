@@ -5,7 +5,7 @@ import { saveToHistory, saveProject } from './history.js';
 let clickCount = 0;
 let clickTimer = null;
 
-export function startDrawing(e) {
+export const startDrawing = (e) => {
     if (e.button && e.button !== 0) return;
 
     const state = getState();
@@ -25,7 +25,7 @@ export function startDrawing(e) {
     state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
 }
 
-export function draw(e) {
+export const draw = (e) => {
     const state = getState();
     if (!state.isDrawing || state.isDraggingSticky) return;
 
@@ -52,7 +52,7 @@ export function draw(e) {
     }
 }
 
-export function stopDrawing() {
+export const stopDrawing = () => {
     const state = getState();
     if (state.isDrawing) {
         state.isDrawing = false;
@@ -70,7 +70,7 @@ export function stopDrawing() {
     }
 }
 
-function drawLine(context, points) {
+const drawLine = (context, points) => {
     const len = points.length;
     if (len < 2) return;
 
@@ -90,7 +90,7 @@ function drawLine(context, points) {
     context.stroke();
 }
 
-function createSmoothTexture(context, p1, p2) {
+const createSmoothTexture = (context, p1, p2) => {
     const state = getState();
     const config = getConfig();
     const brushConfig = config.brush;
@@ -150,7 +150,7 @@ function createSmoothTexture(context, p1, p2) {
     context.globalAlpha = 1.0;
 }
 
-function handleTripleClick(e) {
+const handleTripleClick = (e) => {
     const config = getConfig();
 
     clickCount++;

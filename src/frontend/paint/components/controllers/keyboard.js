@@ -4,7 +4,7 @@ import { undo, redo, saveProject } from '../core/history.js';
 import { clearCanvas, saveImage } from './files.js';           
 import { zoomIn, zoomOut, resetZoom } from './zoomPan.js';
 
-export function handleKeyboard(e) {
+export const handleKeyboard = (e) => {
     const ctrl = e.ctrlKey || e.metaKey;
     const key = e.key;
 
