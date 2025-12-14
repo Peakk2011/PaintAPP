@@ -1,14 +1,37 @@
-import { getState, getConfig } from '../utils/config.js';
+import { getState, getConfig, isReady, waitForReady } from '../utils/config.js';
 import { getCanvasCoords } from './canvas.js';
 import { saveToHistory, saveProject } from './history.js';
 
 let clickCount = 0;
 let clickTimer = null;
+let initPromise = null;
 
-export const startDrawing = (e) => {
+/**
+ * Ensures configuration is loaded before proceeding
+ * @async
+ * @returns {Promise<void>}
+ */
+const ensureReady = async () => {
+    if (!isReady()) {
+        if (!initPromise) {
+            initPromise = waitForReady();
+        }
+        await initPromise;
+    }
+};
+
+/**
+ * Starts drawing operation
+ * @param {MouseEvent|TouchEvent} e - Event object
+ * @returns {Promise<void>}
+ */
+export const startDrawing = async (e) => {
     if (e.button && e.button !== 0) return;
 
+    await ensureReady();
     const state = getState();
+    if (!state) return;
+
     if (state.isDraggingSticky) return;
     if (e.target && e.target.tagName &&
         (e.target.tagName === 'rect' || e.target.tagName === 'text')) return;
@@ -22,22 +45,31 @@ export const startDrawing = (e) => {
     state.isDrawing = true;
     state.points = [getCanvasCoords(e)];
 
-    state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
-}
+    if (state.previewCtx && state.previewCanvas) {
+        state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+    }
+};
 
+/**
+ * Continues drawing operation
+ * @param {MouseEvent|TouchEvent} e - Event object
+ * @returns {void}
+ */
 export const draw = (e) => {
     const state = getState();
-    if (!state.isDrawing || state.isDraggingSticky) return;
+    if (!state || !state.isDrawing || state.isDraggingSticky) return;
 
     state.points.push(getCanvasCoords(e));
 
-    const currentBrush = state.brushType ? state.brushType.value : 'smooth';
+    const currentBrush = state.brushType?.value || 'smooth';
     const previewCtx = state.previewCtx;
+
+    if (!previewCtx || !state.previewCanvas) return;
 
     if (currentBrush === 'smooth') {
         previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
-        previewCtx.strokeStyle = state.brushColor;
-        previewCtx.lineWidth = parseFloat(state.sizePicker.value);
+        previewCtx.strokeStyle = state.brushColor || '#000000';
+        previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
         drawLine(previewCtx, state.points);
     } else {
         const len = state.points.length;
@@ -50,26 +82,42 @@ export const draw = (e) => {
     if (typeof window.requestRedraw === 'function') {
         window.requestRedraw();
     }
-}
+};
 
+/**
+ * Stops drawing operation
+ * @returns {void}
+ */
 export const stopDrawing = () => {
     const state = getState();
-    if (state.isDrawing) {
-        state.isDrawing = false;
+    if (!state || !state.isDrawing) return;
+
+    state.isDrawing = false;
+
+    if (state.drawingCtx && state.previewCanvas) {
         state.drawingCtx.drawImage(state.previewCanvas, 0, 0);
-        state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
-
-        // Request redraw
-        if (typeof window.requestRedraw === 'function') {
-            window.requestRedraw();
-        }
-
-        state.points = [];
-        saveProject();
-        saveToHistory();
     }
-}
 
+    if (state.previewCtx && state.previewCanvas) {
+        state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+    }
+
+    // Request redraw
+    if (typeof window.requestRedraw === 'function') {
+        window.requestRedraw();
+    }
+
+    state.points = [];
+    saveProject();
+    saveToHistory();
+};
+
+/**
+ * Draws smooth line through points
+ * @param {CanvasRenderingContext2D} context - Canvas context
+ * @param {Array<{x: number, y: number}>} points - Array of points
+ * @returns {void}
+ */
 const drawLine = (context, points) => {
     const len = points.length;
     if (len < 2) return;
@@ -88,22 +136,39 @@ const drawLine = (context, points) => {
     const last = points[len - 1];
     context.lineTo(last.x, last.y);
     context.stroke();
-}
+};
 
+/**
+ * Creates textured brush stroke between two points
+ * @param {CanvasRenderingContext2D} context - Canvas context
+ * @param {{x: number, y: number}} p1 - Start point
+ * @param {{x: number, y: number}} p2 - End point
+ * @returns {void}
+ */
 const createSmoothTexture = (context, p1, p2) => {
     const state = getState();
     const config = getConfig();
-    const brushConfig = config.brush;
 
-    const size = parseFloat(state.sizePicker.value);
+    if (!state || !config) {
+        console.warn('State or config not ready for texture rendering');
+        return;
+    }
+
+    const brushConfig = config.brush;
+    if (!brushConfig) {
+        console.warn('Brush config not found');
+        return;
+    }
+
+    const size = parseFloat(state.sizePicker?.value || 2);
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx);
 
     const density = Math.max(
-        brushConfig.TEXTURE_DENSITY_MIN,
-        distance / (size * brushConfig.TEXTURE_SIZE_MULTIPLIER)
+        brushConfig.TEXTURE_DENSITY_MIN || 5,
+        distance / (size * (brushConfig.TEXTURE_SIZE_MULTIPLIER || 2))
     );
 
     for (let i = 0; i < density; i++) {
@@ -111,16 +176,16 @@ const createSmoothTexture = (context, p1, p2) => {
         const x = p1.x + dx * t;
         const y = p1.y + dy * t;
 
-        const jitterX = (Math.random() - 0.5) * (size * brushConfig.TEXTURE_JITTER);
-        const jitterY = (Math.random() - 0.5) * (size * brushConfig.TEXTURE_JITTER);
+        const jitterX = (Math.random() - 0.5) * (size * (brushConfig.TEXTURE_JITTER || 0.3));
+        const jitterY = (Math.random() - 0.5) * (size * (brushConfig.TEXTURE_JITTER || 0.3));
 
-        const bristleAngle = angle + (Math.random() - 0.5) * brushConfig.TEXTURE_BRISTLE_ANGLE;
-        const bristleLength = (Math.random() * size * brushConfig.TEXTURE_BRISTLE_LENGTH_MAX) +
-            (size * brushConfig.TEXTURE_BRISTLE_LENGTH_MIN);
+        const bristleAngle = angle + (Math.random() - 0.5) * (brushConfig.TEXTURE_BRISTLE_ANGLE || 0.3);
+        const bristleLength = (Math.random() * size * (brushConfig.TEXTURE_BRISTLE_LENGTH_MAX || 0.8)) +
+            (size * (brushConfig.TEXTURE_BRISTLE_LENGTH_MIN || 0.2));
 
         const speedFactor = 1 - t;
         const bristleWidth = (Math.random() * (size / 6) + (size / 8)) * (0.5 + speedFactor);
-        const alpha = Math.random() * 0.2 + brushConfig.TEXTURE_ALPHA_MIN;
+        const alpha = Math.random() * 0.2 + (brushConfig.TEXTURE_ALPHA_MIN || 0.1);
 
         const cosAngle = Math.cos(bristleAngle);
         const sinAngle = Math.sin(bristleAngle);
@@ -136,22 +201,28 @@ const createSmoothTexture = (context, p1, p2) => {
             y + jitterY + sinAngle * halfLength
         );
 
-        context.strokeStyle = state.brushColor;
+        context.strokeStyle = state.brushColor || '#000000';
         context.lineWidth = bristleWidth;
         context.globalAlpha = alpha;
         context.lineCap = 'round';
         context.stroke();
 
-        if (Math.random() < brushConfig.TEXTURE_INK_FLOW_CHANCE) {
+        if (Math.random() < (brushConfig.TEXTURE_INK_FLOW_CHANCE || 0.3)) {
             context.globalAlpha = alpha * 0.5;
             context.stroke();
         }
     }
     context.globalAlpha = 1.0;
-}
+};
 
+/**
+ * Handles triple click to create sticky note
+ * @param {MouseEvent} e - Mouse event
+ * @returns {void}
+ */
 const handleTripleClick = (e) => {
     const config = getConfig();
+    if (!config) return;
 
     clickCount++;
     if (clickTimer) clearTimeout(clickTimer);
@@ -165,5 +236,5 @@ const handleTripleClick = (e) => {
             }
         }
         clickCount = 0;
-    }, config.constants.CLICK_DELAY);
-}
+    }, config.constants?.CLICK_DELAY || 300);
+};
