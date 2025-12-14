@@ -25,7 +25,7 @@ export const setupCanvas = () => {
 
         const container = state.canvasContainer;
         const rect = container.getBoundingClientRect();
-        const dpr = Math.max(state.devicePixelRatio || 1, 2);
+        const dpr = state.devicePixelRatio;
 
         // Use bitwise OR for rounding
         const newWidth = (rect.width + 0.5) | 0;
