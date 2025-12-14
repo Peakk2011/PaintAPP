@@ -160,15 +160,26 @@ const createSmoothTexture = (context, p1, p2) => {
         return;
     }
 
-    const size = parseFloat(state.sizePicker?.value || 2);
+    const {
+        TEXTURE_DENSITY_MIN = 5,
+        TEXTURE_SIZE_MULTIPLIER = 2,
+        TEXTURE_JITTER = 0.3,
+        TEXTURE_BRISTLE_ANGLE = 0.3,
+        TEXTURE_BRISTLE_LENGTH_MAX = 0.8,
+        TEXTURE_BRISTLE_LENGTH_MIN = 0.2,
+        TEXTURE_ALPHA_MIN = 0.1,
+        TEXTURE_INK_FLOW_CHANCE = 0.3,
+    } = brushConfig;
+
+    const size = parseFloat(state.sizePicker?.value ?? 2);
     const dx = p2.x - p1.x;
     const dy = p2.y - p1.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx);
 
     const density = Math.max(
-        brushConfig.TEXTURE_DENSITY_MIN || 5,
-        distance / (size * (brushConfig.TEXTURE_SIZE_MULTIPLIER || 2))
+        TEXTURE_DENSITY_MIN,
+        distance / (size * TEXTURE_SIZE_MULTIPLIER)
     );
 
     for (let i = 0; i < density; i++) {
@@ -176,16 +187,16 @@ const createSmoothTexture = (context, p1, p2) => {
         const x = p1.x + dx * t;
         const y = p1.y + dy * t;
 
-        const jitterX = (Math.random() - 0.5) * (size * (brushConfig.TEXTURE_JITTER || 0.3));
-        const jitterY = (Math.random() - 0.5) * (size * (brushConfig.TEXTURE_JITTER || 0.3));
+        const jitterX = (Math.random() - 0.5) * (size * TEXTURE_JITTER);
+        const jitterY = (Math.random() - 0.5) * (size * TEXTURE_JITTER);
 
-        const bristleAngle = angle + (Math.random() - 0.5) * (brushConfig.TEXTURE_BRISTLE_ANGLE || 0.3);
-        const bristleLength = (Math.random() * size * (brushConfig.TEXTURE_BRISTLE_LENGTH_MAX || 0.8)) +
-            (size * (brushConfig.TEXTURE_BRISTLE_LENGTH_MIN || 0.2));
+        const bristleAngle = angle + (Math.random() - 0.5) * TEXTURE_BRISTLE_ANGLE;
+        const bristleLength = (Math.random() * size * TEXTURE_BRISTLE_LENGTH_MAX) +
+            (size * TEXTURE_BRISTLE_LENGTH_MIN);
 
         const speedFactor = 1 - t;
         const bristleWidth = (Math.random() * (size / 6) + (size / 8)) * (0.5 + speedFactor);
-        const alpha = Math.random() * 0.2 + (brushConfig.TEXTURE_ALPHA_MIN || 0.1);
+        const alpha = Math.random() * 0.2 + TEXTURE_ALPHA_MIN;
 
         const cosAngle = Math.cos(bristleAngle);
         const sinAngle = Math.sin(bristleAngle);
@@ -201,13 +212,13 @@ const createSmoothTexture = (context, p1, p2) => {
             y + jitterY + sinAngle * halfLength
         );
 
-        context.strokeStyle = state.brushColor || '#000000';
+        context.strokeStyle = state.brushColor ?? '#000000';
         context.lineWidth = bristleWidth;
         context.globalAlpha = alpha;
         context.lineCap = 'round';
         context.stroke();
 
-        if (Math.random() < (brushConfig.TEXTURE_INK_FLOW_CHANCE || 0.3)) {
+        if (Math.random() < TEXTURE_INK_FLOW_CHANCE) {
             context.globalAlpha = alpha * 0.5;
             context.stroke();
         }
