@@ -1,114 +1,247 @@
 import { getState, getConfig } from '../utils/config.js';
 
+/**
+ * @typedef {Object} CanvasCoordinates
+ * @property {number} x - X coordinate
+ * @property {number} y - Y coordinate
+ */
+
+// Constants cache
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const TWO_PI = 6.283185307179586; // Math.PI * 2
+const POSITION_ABSOLUTE = 'absolute';
+const POINTER_EVENTS_NONE = 'none';
+const LINE_CAP_ROUND = 'round';
+const LINE_JOIN_ROUND = 'round';
+
+/**
+ * Sets up and configures all canvas elements
+ * @returns {void}
+ */
 export const setupCanvas = () => {
-    const state = getState();
-    const config = getConfig();
+    try {
+        const state = getState();
+        const config = getConfig();
 
-    const container = state.canvasContainer;
-    const rect = container.getBoundingClientRect();
-    const dpr = state.devicePixelRatio;
+        const container = state.canvasContainer;
+        const rect = container.getBoundingClientRect();
+        const dpr = state.devicePixelRatio;
 
-    const newWidth = Math.round(rect.width);
-    const newHeight = Math.round(rect.height);
+        // Use bitwise OR for rounding
+        const newWidth = (rect.width + 0.5) | 0;
+        const newHeight = (rect.height + 0.5) | 0;
 
-    if (state.canvasWidth !== newWidth || state.canvasHeight !== newHeight) {
-        state.canvasWidth = newWidth;
-        state.canvasHeight = newHeight;
+        // Check if resize is needed
+        if (state.canvasWidth !== newWidth || state.canvasHeight !== newHeight) {
+            state.canvasWidth = newWidth;
+            state.canvasHeight = newHeight;
 
-        // Update all canvases
-        updateCanvasSize(state.canvas, newWidth, newHeight, dpr);
-        updateCanvasSize(state.drawingCanvas, newWidth, newHeight, dpr);
-        updateCanvasSize(state.previewCanvas, newWidth, newHeight, dpr);
+            // Update all canvases in batch
+            updateCanvasSize(
+                state.canvas,
+                newWidth,
+                newHeight,
+                dpr
+            );
 
-        // Scale contexts
-        const contexts = [state.ctx, state.drawingCtx, state.previewCtx];
-        contexts.forEach(ctx => {
-            ctx.scale(dpr, dpr);
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-        });
+            updateCanvasSize(
+                state.drawingCanvas,
+                newWidth,
+                newHeight,
+                dpr
+            );
+
+            updateCanvasSize(
+                state.previewCanvas,
+                newWidth,
+                newHeight,
+                dpr
+            );
+
+            // Scale and configure contexts
+            const contexts = [
+                state.ctx,
+                state.drawingCtx,
+                state.previewCtx
+            ];
+            
+            const contextsLen = contexts.length;
+            
+            for (let i = 0; i < contextsLen; i++) {
+                const ctx = contexts[i];
+                ctx.scale(dpr, dpr);
+                ctx.lineCap = LINE_CAP_ROUND;
+                ctx.lineJoin = LINE_JOIN_ROUND;
+            }
+        }
+
+        // Initialize pan values on first setup
+        if (!state.isInitialized) {
+            state.panX = 0;
+            state.panY = 0;
+            state.isInitialized = true;
+        }
+
+        initSVG();
+        requestRedraw();
+    } catch (err) {
+        console.error('Error setting up canvas:', err);
     }
+};
 
-    if (!state.isInitialized) {
-        state.panX = 0;
-        state.panY = 0;
-        state.isInitialized = true;
-    }
-
-    initSVG();
-    requestRedraw();
-}
-
+/**
+ * Updates canvas dimensions and pixel ratio
+ * @param {HTMLCanvasElement} canvas    - Canvas element to update
+ * @param {number} width                - New width in CSS pixels
+ * @param {number} height               - New height in CSS pixels
+ * @param {number} dpr                  - Device pixel ratio
+ * @returns {void}
+ */
 const updateCanvasSize = (canvas, width, height, dpr) => {
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-}
-
-export const initSVG = () => {
-    const state = getState();
-
-    if (state.svg) {
-        state.svg.remove();
+    try {
+        // Set buffer size (actual pixels)
+        canvas.width = (width * dpr) | 0;
+        canvas.height = (height * dpr) | 0;
+        
+        // Set display size (CSS pixels)
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+    } catch (err) {
+        console.error('Error updating canvas size:', err);
     }
+};
 
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10';
+/**
+ * Initializes or reinitializes the SVG overlay
+ * @returns {void}
+ */
+export const initSVG = () => {
+    try {
+        const state = getState();
 
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    svg.appendChild(g);
+        // Remove existing SVG if present
+        if (state.svg && state.svg.parentNode) {
+            state.svg.parentNode.removeChild(state.svg);
+        }
 
-    state.svg = svg;
-    state.svgGroup = g;
-    state.canvasContainer.appendChild(svg);
-}
+        // Create new SVG element
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10';
 
+        // Create group element
+        const g = document.createElementNS(SVG_NS, 'g');
+        svg.appendChild(g);
+
+        // Update state
+        state.svg = svg;
+        state.svgGroup = g;
+        state.canvasContainer.appendChild(svg);
+    } catch (err) {
+        console.error('Error initializing SVG:', err);
+    }
+};
+
+/**
+ * Converts mouse event coordinates to canvas coordinates
+ * @param {MouseEvent} e - Mouse event
+ * @returns {CanvasCoordinates} Transformed coordinates
+ */
 export const getCanvasCoords = (e) => {
-    const state = getState();
-    const rect = state.canvasContainer.getBoundingClientRect();
-    return {
-        x: (e.clientX - rect.left - state.panX) / state.scale,
-        y: (e.clientY - rect.top - state.panY) / state.scale
-    };
-}
+    try {
+        const state = getState();
+        const rect = state.canvasContainer.getBoundingClientRect();
+        const scale = state.scale;
+        const panX = state.panX;
+        const panY = state.panY;
+        
+        return {
+            x: (e.clientX - rect.left - panX) / scale,
+            y: (e.clientY - rect.top - panY) / scale
+        };
+    } catch (err) {
+        console.error('Error getting canvas coordinates:', err);
+        return { x: 0, y: 0 };
+    }
+};
 
+/**
+ * Requests a full canvas redraw including grid and layers
+ * @returns {void}
+ */
 export const requestRedraw = () => {
-    const state = getState();
-    const config = getConfig();
-    const ctx = state.ctx;
-    const canvas = state.canvas;
+    try {
+        const state = getState();
+        const config = getConfig();
+        const ctx = state.ctx;
+        const canvas = state.canvas;
+        const scale = state.scale;
+        const panX = state.panX;
+        const panY = state.panY;
 
-    ctx.save();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.translate(state.panX, state.panY);
-    ctx.scale(state.scale, state.scale);
+        ctx.save();
+        
+        // Clear entire canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Apply transformations
+        ctx.translate(panX, panY);
+        ctx.scale(scale, scale);
 
-    // Draw grid
-    const scale = state.scale;
-    if (scale > 0.25) {
+        // Draw grid if zoomed in enough
+        if (scale > 0.25) {
+            drawGrid(ctx, state, config, scale);
+        }
+
+        // Draw layer canvases
+        ctx.drawImage(state.drawingCanvas, 0, 0);
+        ctx.drawImage(state.previewCanvas, 0, 0);
+        
+        ctx.restore();
+    } catch (err) {
+        console.error('Error redrawing canvas:', err);
+    }
+};
+
+/**
+ * Draws the grid pattern on canvas
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {Object} state - Application state
+ * @param {Object} config - Configuration object
+ * @param {number} scale - Current zoom scale
+ * @returns {void}
+ */
+const drawGrid = (ctx, state, config, scale) => {
+    try {
         const gridSize = config.constants.GRID_SIZE;
+        const canvasWidth = state.canvasWidth;
+        const canvasHeight = state.canvasHeight;
+        const panX = state.panX;
+        const panY = state.panY;
+        
+        // Calculate opacity based on zoom level
         const opacity = Math.min(1, (scale - 0.25) / 0.25);
-
-        ctx.fillStyle = 'rgba(128,128,128,' + (opacity * 0.5) + ')';
+        const alphaValue = opacity * 0.5;
+        
+        ctx.fillStyle = 'rgba(128,128,128,' + alphaValue + ')';
+        
+        // Calculate dot radius based on zoom
         const dotRadius = 1 / scale;
+        
+        // Calculate visible grid bounds
+        const startX = (((-panX / scale / gridSize) | 0) * gridSize) | 0;
+        const startY = (((-panY / scale / gridSize) | 0) * gridSize) | 0;
+        const endX = (startX + (canvasWidth / scale) + gridSize) | 0;
+        const endY = (startY + (canvasHeight / scale) + gridSize) | 0;
 
-        const startX = Math.floor(-state.panX / scale / gridSize) * gridSize;
-        const startY = Math.floor(-state.panY / scale / gridSize) * gridSize;
-        const endX = startX + (state.canvasWidth / scale) + gridSize;
-        const endY = startY + (state.canvasHeight / scale) + gridSize;
-
+        // Draw grid dots
         for (let x = startX; x < endX; x += gridSize) {
             for (let y = startY; y < endY; y += gridSize) {
                 ctx.beginPath();
-                ctx.arc(x, y, dotRadius, 0, 6.28318530718);
+                ctx.arc(x, y, dotRadius, 0, TWO_PI);
                 ctx.fill();
             }
         }
+    } catch (err) {
+        console.error('Error drawing grid:', err);
     }
-
-    // Draw canvases
-    ctx.drawImage(state.drawingCanvas, 0, 0);
-    ctx.drawImage(state.previewCanvas, 0, 0);
-    ctx.restore();
-}
+};
