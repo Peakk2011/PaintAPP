@@ -25,7 +25,7 @@ export const setupCanvas = () => {
 
         const container = state.canvasContainer;
         const rect = container.getBoundingClientRect();
-        const dpr = state.devicePixelRatio;
+        const dpr = Math.max(state.devicePixelRatio || 1, 2);
 
         // Use bitwise OR for rounding
         const newWidth = (rect.width + 0.5) | 0;
@@ -174,22 +174,18 @@ export const requestRedraw = () => {
         const config = getConfig();
         const ctx = state.ctx;
         const canvas = state.canvas;
-        const scale = state.scale;
-        const panX = state.panX;
-        const panY = state.panY;
 
         ctx.save();
         
         // Clear entire canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Apply transformations
-        ctx.translate(panX, panY);
-        ctx.scale(scale, scale);
+
+        // Transformations are now handled by CSS via updateViewTransform.
+        // The canvas content is always drawn at a 1:1 scale.
 
         // Draw grid if zoomed in enough
-        if (scale > 0.25) {
-            drawGrid(ctx, state, config, scale);
+        if (state.scale > 0.25) {
+            drawGrid(ctx, state, config, state.scale);
         }
 
         // Draw layer canvases
@@ -199,6 +195,30 @@ export const requestRedraw = () => {
         ctx.restore();
     } catch (err) {
         console.error('Error redrawing canvas:', err);
+    }
+};
+
+/**
+ * Updates the CSS transform of the canvas and SVG overlay for fast panning and zooming.
+ * @returns {void}
+ */
+export const updateViewTransform = () => {
+    try {
+        const state = getState();
+        const { canvas, svg, scale, panX, panY } = state;
+
+        if (!canvas || !svg) return;
+
+        // Use integer values for pan to avoid sub-pixel rendering issues
+        const transform = `translate(${(panX | 0)}px, ${(panY | 0)}px) scale(${scale})`;
+        
+        canvas.style.transformOrigin = '0 0';
+        canvas.style.transform = transform;
+        
+        svg.style.transformOrigin = '0 0';
+        svg.style.transform = transform;
+    } catch (error) {
+        console.error('Error updating view transform:', error);
     }
 };
 

@@ -78,6 +78,33 @@ export const setupEventListeners = () => {
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboard);
 
+    // Shift key state for straight lines
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Shift') {
+            const state = getState();
+            if (state) {
+                state.isShiftDown = true;
+            }
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift') {
+            const state = getState();
+            if (state) {
+                state.isShiftDown = false;
+            }
+        }
+    });
+
+    // Reset shift state if window loses focus
+    window.addEventListener('blur', () => {
+        const state = getState();
+        if (state) {
+            state.isShiftDown = false;
+        }
+    });
+
     // Window events
     window.addEventListener('resize', handleResize);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', adjustTheme);

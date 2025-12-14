@@ -130,8 +130,7 @@ const createRangeInput = (controlInfo) => {
  */
 const createSelectInput = (controlInfo) => {
     const controlDiv = createElement('div', {
-        className: 'control',
-        id: controlInfo.id || ''
+        className: 'control'
     });
 
     const select = createElement('select', {

@@ -59,22 +59,44 @@ export const draw = (e) => {
     const state = getState();
     if (!state || !state.isDrawing || state.isDraggingSticky) return;
 
-    state.points.push(getCanvasCoords(e));
-
-    const currentBrush = state.brushType?.value || 'smooth';
     const previewCtx = state.previewCtx;
-
     if (!previewCtx || !state.previewCanvas) return;
 
-    if (currentBrush === 'smooth') {
+    const currentBrush = state.brushType?.value || 'smooth';
+
+    if (state.isShiftDown) {
+        // --- Straight Line Logic ---
+        const startPoint = state.points[0];
+        const currentPoint = getCanvasCoords(e);
+        
+        // Replace the entire points array with just start and end for redraw.
+        state.points = [startPoint, currentPoint];
+
+        // For straight line, we always clear and redraw the full line.
         previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
-        previewCtx.strokeStyle = state.brushColor || '#000000';
-        previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
-        drawLine(previewCtx, state.points);
+
+        if (currentBrush === 'smooth') {
+            previewCtx.strokeStyle = state.brushColor || '#000000';
+            previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
+            drawLine(previewCtx, state.points);
+        } else { // texture brush
+            // createSmoothTexture handles drawing between two points.
+            createSmoothTexture(previewCtx, state.points[0], state.points[1]);
+        }
     } else {
-        const len = state.points.length;
-        if (len > 1) {
-            createSmoothTexture(previewCtx, state.points[len - 2], state.points[len - 1]);
+        // --- Original Freeform Logic ---
+        state.points.push(getCanvasCoords(e));
+
+        if (currentBrush === 'smooth') {
+            previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+            previewCtx.strokeStyle = state.brushColor || '#000000';
+            previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
+            drawLine(previewCtx, state.points);
+        } else {
+            const len = state.points.length;
+            if (len > 1) {
+                createSmoothTexture(previewCtx, state.points[len - 2], state.points[len - 1]);
+            }
         }
     }
 

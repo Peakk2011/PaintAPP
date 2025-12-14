@@ -26,6 +26,7 @@
   "svgGroup": null,
 
   "isDrawing": false,
+  "isShiftDown": false,
   "points": [],
 
   "panX": 0,

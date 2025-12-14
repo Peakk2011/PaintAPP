@@ -1,7 +1,7 @@
 // components/controllers/files.js
 import { getState, getConfig } from '../utils/config.js';
 import { removeAllStickyNotes } from '../core/stickyNotes.js';
-import { saveToHistory } from '../core/history.js';
+import { saveToHistory, saveProject } from '../core/history.js';
 
 export const clearCanvas = () => {
     const state = getState();
@@ -27,6 +27,7 @@ export const clearCanvas = () => {
     }
 
     saveToHistory();
+    saveProject();
 }
 
 export const saveImage = () => {
