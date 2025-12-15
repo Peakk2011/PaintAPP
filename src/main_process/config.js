@@ -5,7 +5,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app } from 'electron';
+import { app, nativeTheme } from 'electron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +31,7 @@ export const appConfig = {
  */
 export const windowConfig = {
     default: {
-        width: 800,
+        width: 480,
         height: 600
     },
     min: {
@@ -57,8 +57,8 @@ export const platform = {
             return {
                 titleBarStyle: 'hidden',
                 titleBarOverlay: {
-                    color: '#0f0f0f',
-                    symbolColor: '#ffffff',
+                    color: '#00000000',
+                    symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
                     height: 38
                 },
                 frame: true,

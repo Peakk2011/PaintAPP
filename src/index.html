@@ -1,13 +1,10 @@
 <!-- 
-    Essential app | Paint app
+    PaintAPP
     Made by Mint teams
     Samuel lakamo , Peakk2011(Peakk)
-    Version 1.0 First release
     
-    Updated: 2025-23-08
-    With Seprate plain PaintAPP app
+    Updated: 2025-15-12
     License: MIT
-    GitHub: Peakk2011/Essential-app
 -->
 
 <!DOCTYPE html>
@@ -16,38 +13,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'">
+    <meta
+        http-equiv="Content-Security-Policy"
+        content="
+            default-src 'self';
+            script-src  'self' https://cdn.jsdelivr.net;
+            style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
+            font-src    'self' https://fonts.gstatic.com;
+            img-src     'self' data: blob:;
+            connect-src 'self';
+        "
+    />
     <title>PaintAPP</title>
     <link rel="stylesheet" href="./frontend/stylesheet/paint.css" crossorigin="anonymous" />
     <link rel="stylesheet" href="./frontend/stylesheet/reset.css" crossorigin="anonymous" />
-    <!-- Material icons -->
-    <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
 </head>
 
 <body>
 
-    <!-- import Navbar as <nav> -->
+    <!-- Navbar -->
 
     <nav id="MainNavbar">
         <div id="Titlebar-Dragable"></div>
         <div class="contentTEXT">
             <h1 id="headerTitle"></h1>
         </div>
-        <ul>
-            <li id="GotoHomePage"><a href="index.html">
-                    <span class="material-symbols-outlined">home</span>
-                </a></li>
-            <li id="KeepONtop"><a href="javascript:void(0)">
-                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
-                        fill="var(--theme-links)">
-                        <path
-                            d="M204-129q-30.94 0-52.97-22.03Q129-173.06 129-204v-552q0-30.94 22.03-52.97Q173.06-831 204-831h273v75H204v552h552v-273h75v273q0 30.94-22.03 52.97Q786.94-129 756-129H204Zm185.5-208L337-389.5 703.5-756H552v-75h279v279h-75v-151.5L389.5-337Z" />
-                    </svg>
-                </a></li>
-            <div id="MainLINKS"></div>
-        </ul>
     </nav>
 
     <!-- Content -->
@@ -57,8 +48,6 @@
     <div id="canvasContainer">
         <canvas id="canvas"></canvas>
     </div>
-
-    <div class="AnimBackgroundBlur" id="AnimBackgroundBlur"></div>
 
     <script src="./frontend/paint/paint.js" type="module"></script>
     <script src="./frontend/data/data-loader.js" type="module"></script>

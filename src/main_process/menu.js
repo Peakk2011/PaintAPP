@@ -136,23 +136,83 @@ export const createMacMenu = (createWindow, windowSize) => {
 
 /**
  * Creates the context menu template.
- * @param {string} currentBrush - The name of the currently selected brush ('smooth' or 'texture').
- * @returns {Electron.MenuItemConstructorOptions[]} The context menu template.
+ * @param {string} currentBrush - Current brush type ('smooth' | 'texture')
+ * @returns {Electron.MenuItemConstructorOptions[]}
  */
 export const createContextMenu = (currentBrush) => {
+    // Set default if currentBrush is undefined
+    const brushType = currentBrush || 'smooth';
+
     return [
-        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', click: () => event.sender.send('trigger-action', 'undo') },
-        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', click: () => event.sender.send('trigger-action', 'redo') },
+        {
+            label: 'Undo',
+            accelerator: 'CmdOrCtrl+Z',
+            click: (item, focusedWindow) => {
+                if (focusedWindow) {
+                    focusedWindow.webContents.send('trigger-action', 'undo');
+                }
+            }
+        },
+        {
+            label: 'Redo',
+            accelerator: 'Shift+CmdOrCtrl+Z',
+            click: (item, focusedWindow) => {
+                if (focusedWindow) {
+                    focusedWindow.webContents.send('trigger-action', 'redo');
+                }
+            }
+        },
         { type: 'separator' },
-        { label: 'Save Project', accelerator: 'CmdOrCtrl+S', click: () => event.sender.send('trigger-action', 'save-project') },
-        { label: 'Export Image', accelerator: 'CmdOrCtrl+Shift+S', click: () => event.sender.send('trigger-action', 'export-image') },
-        { label: 'Clear Canvas', click: () => event.sender.send('trigger-action', 'clear') },
+        {
+            label: 'Save Project',
+            accelerator: 'CmdOrCtrl+S',
+            click: (item, focusedWindow) => {
+                if (focusedWindow) {
+                    focusedWindow.webContents.send('trigger-action', 'save-project');
+                }
+            }
+        },
+        {
+            label: 'Export Image',
+            accelerator: 'CmdOrCtrl+Shift+S',
+            click: (item, focusedWindow) => {
+                if (focusedWindow) {
+                    focusedWindow.webContents.send('trigger-action', 'export-image');
+                }
+            }
+        },
+        {
+            label: 'Clear Canvas',
+            click: (item, focusedWindow) => {
+                if (focusedWindow) {
+                    focusedWindow.webContents.send('trigger-action', 'clear');
+                }
+            }
+        },
         { type: 'separator' },
         {
             label: 'Brush Style',
             submenu: [
-                { label: 'Smooth', type: 'radio', checked: currentBrush === 'smooth', click: () => event.sender.send('trigger-action', 'set-brush', 'smooth') },
-                { label: 'Pen Style', type: 'radio', checked: currentBrush === 'texture', click: () => event.sender.send('trigger-action', 'set-brush', 'texture') }
+                {
+                    label: 'Smooth',
+                    type: 'radio',
+                    checked: brushType === 'smooth',
+                    click: (item, focusedWindow) => {
+                        if (focusedWindow) {
+                            focusedWindow.webContents.send('set-brush', 'smooth');
+                        }
+                    }
+                },
+                {
+                    label: 'Pen Style',
+                    type: 'radio',
+                    checked: brushType === 'texture',
+                    click: (item, focusedWindow) => {
+                        if (focusedWindow) {
+                            focusedWindow.webContents.send('set-brush', 'texture');
+                        }
+                    }
+                }
             ]
         }
     ];

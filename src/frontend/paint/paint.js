@@ -158,7 +158,7 @@ const initializeDOMElements = () => {
     /** @type {HTMLElement} */
     state.iroPickerContainer = document.getElementById(ids.iroPickerContainer);
     /** @type {HTMLInputElement} */
-    state.sizePicker = document.getElementById(ids.sizePicker);
+    state.sizePicker = document.getElementById(ids.brushSize);
     /** @type {HTMLElement} */
     state.sizeDisplay = document.getElementById(ids.sizeDisplay);
     /** @type {HTMLSelectElement} */

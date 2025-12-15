@@ -86,10 +86,19 @@ export const saveImage = () => {
                 filename = cfg.FILENAME_PREFIX + timestamp + '.png';
         }
 
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = dataUrl;
-        link.click();
+        // If running in Electron, use IPC to trigger a native save dialog.
+        // Otherwise, fall back to the browser's download method.
+        if (window.Electron && window.Electron.ipcRenderer) {
+            window.Electron.ipcRenderer.send('save-image', { dataUrl, format });
+        } else {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         URL.revokeObjectURL(url);
     };
 
