@@ -52,11 +52,12 @@ export const createStickyNote = (x, y, width, height) => {
 
         // Set group properties
         group.style.pointerEvents = POINTER_EVENTS_AUTO;
+        group.setAttribute('transform', `translate(${x}, ${y})`);
 
         // Batch rect attribute updates
         const rectAttrs = [
-            ['x', x],
-            ['y', y],
+            ['x', 0],
+            ['y', 0],
             ['width', width],
             ['height', height],
             ['fill', config.DEFAULT_COLOR],
@@ -71,8 +72,8 @@ export const createStickyNote = (x, y, width, height) => {
         rect.style.cursor = CURSOR_MOVE;
 
         // Batch text attribute updates
-        const textX = x + config.TEXT_OFFSET_X;
-        const textY = y + config.TEXT_OFFSET_Y;
+        const textX = config.TEXT_OFFSET_X;
+        const textY = config.TEXT_OFFSET_Y;
         const textAttrs = [
             ['x', textX],
             ['y', textY],
@@ -109,11 +110,58 @@ export const createStickyNote = (x, y, width, height) => {
                     if (stickyObj.group && stickyObj.group.parentNode) {
                         stickyObj.group.parentNode.removeChild(stickyObj.group);
                     }
+                    const state = getState();
+                    const index = state.stickyNotes.indexOf(stickyObj);
+                    if (index > -1) {
+                        state.stickyNotes.splice(index, 1);
+                    }
+                    saveProject();
+                    saveToHistory();
                 } catch (error) {
                     console.error('Error removing sticky note:', error);
                 }
             }
         };
+
+        // Create delete button
+        const deleteBtn = document.createElementNS(SVG_NS, 'g');
+        deleteBtn.setAttribute('class', 'sticky-note-delete-button');
+        deleteBtn.style.cursor = 'pointer';
+
+        const deleteCircle = document.createElementNS(SVG_NS, 'circle');
+        deleteCircle.setAttribute('cx', width - config.DELETE_BTN_OFFSET);
+        deleteCircle.setAttribute('cy', config.DELETE_BTN_OFFSET);
+        deleteCircle.setAttribute('r', config.DELETE_BTN_RADIUS);
+        deleteCircle.setAttribute('fill', '#ff5f57');
+        deleteCircle.setAttribute('stroke', '#7d0000');
+        deleteCircle.setAttribute('stroke-width', 0.5);
+
+        const deleteLine1 = document.createElementNS(SVG_NS, 'line');
+        const lineOffset = config.DELETE_BTN_RADIUS / 2.2;
+        deleteLine1.setAttribute('x1', width - config.DELETE_BTN_OFFSET - lineOffset);
+        deleteLine1.setAttribute('y1', config.DELETE_BTN_OFFSET - lineOffset);
+        deleteLine1.setAttribute('x2', width - config.DELETE_BTN_OFFSET + lineOffset);
+        deleteLine1.setAttribute('y2', config.DELETE_BTN_OFFSET + lineOffset);
+        deleteLine1.setAttribute('stroke', '#7d0000');
+        deleteLine1.setAttribute('stroke-width', 1);
+
+        const deleteLine2 = document.createElementNS(SVG_NS, 'line');
+        deleteLine2.setAttribute('x1', width - config.DELETE_BTN_OFFSET - lineOffset);
+        deleteLine2.setAttribute('y1', config.DELETE_BTN_OFFSET + lineOffset);
+        deleteLine2.setAttribute('x2', width - config.DELETE_BTN_OFFSET + lineOffset);
+        deleteLine2.setAttribute('y2', config.DELETE_BTN_OFFSET - lineOffset);
+        deleteLine2.setAttribute('stroke', '#7d0000');
+        deleteLine2.setAttribute('stroke-width', 1);
+        
+        deleteBtn.appendChild(deleteCircle);
+        deleteBtn.appendChild(deleteLine1);
+        deleteBtn.appendChild(deleteLine2);
+        group.appendChild(deleteBtn);
+
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            stickyObj.remove();
+        });
 
         setupStickyListeners(stickyObj);
         state.stickyNotes.push(stickyObj);
@@ -221,16 +269,7 @@ const setupStickyListeners = (sticky) => {
  */
 const updateStickyPosition = (sticky) => {
     try {
-        const config = getConfig().sticky;
-        const textX = sticky.x + config.TEXT_OFFSET_X;
-        const textY = sticky.y + config.TEXT_OFFSET_Y;
-
-        // Batch attribute updates
-        sticky.rect.setAttribute('x', sticky.x);
-        sticky.rect.setAttribute('y', sticky.y);
-        
-        sticky.textElement.setAttribute('x', textX);
-        sticky.textElement.setAttribute('y', textY);
+        sticky.group.setAttribute('transform', `translate(${sticky.x}, ${sticky.y})`);
     } catch (error) {
         console.error('Error updating sticky position:', error);
     }
@@ -246,11 +285,12 @@ const startStickyEditing = (sticky) => {
 
     try {
         sticky.isEditing = true;
+        const originalText = sticky.text; // Store original text
 
         const foreign = document.createElementNS(SVG_NS, 'foreignObject');
         const foreignAttrs = [
-            ['x', sticky.x],
-            ['y', sticky.y],
+            ['x', 0],
+            ['y', 0],
             ['width', sticky.width],
             ['height', sticky.height]
         ];
@@ -261,35 +301,60 @@ const startStickyEditing = (sticky) => {
 
         const textarea = document.createElement('textarea');
         textarea.value = sticky.text;
-        textarea.style.cssText = 'width:100%;height:100%;resize:both;font:14px Arial,sans-serif;background:transparent;border:none;outline:none';
+        textarea.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: 1px solid #adadad;
+            outline: none;
+            resize: both;
+            font: 14px var(--font-text), sans-serif;
+            background-color: rgba(255, 253, 208, 0.95);
+            color: #000000;
+            padding: 0.75rem;
+            box-sizing: border-box;
+            border-radius: 5px;
+        `;
 
-        /**
-         * @returns {void}
-         */
+        const removeEditor = () => {
+            foreign.remove();
+            sticky.isEditing = false;
+        };
+
         const onBlur = () => {
             try {
-                sticky.text = textarea.value;
-                sticky.textElement.textContent = textarea.value;
-                
-                foreign.remove();
-                sticky.isEditing = false;
-
-                saveProject();
-                saveToHistory();
+                // Revert text to original on blur
+                sticky.textElement.textContent = originalText;
+                sticky.text = originalText;
+                removeEditor();
             } catch (error) {
                 console.error('Error in blur handler:', error);
-                sticky.isEditing = false;
+                removeEditor(); // Ensure editor is removed even on error
             }
         };
 
-        textarea.addEventListener(
-            'blur',
-            onBlur
-        );
+        const onKeyDown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                // Save changes
+                sticky.text = textarea.value;
+                sticky.textElement.textContent = textarea.value;
+                saveProject();
+                saveToHistory();
+                removeEditor();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                // Cancel changes (will be handled by blur)
+                textarea.blur();
+            }
+        };
+
+        textarea.addEventListener('blur', onBlur);
+        textarea.addEventListener('keydown', onKeyDown);
         
         foreign.appendChild(textarea);
         sticky.group.appendChild(foreign);
         textarea.focus();
+        textarea.select(); // Select all text for easy replacement
     } catch (error) {
         console.error('Error starting sticky editing:', error);
         sticky.isEditing = false;

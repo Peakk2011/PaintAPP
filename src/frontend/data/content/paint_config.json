@@ -20,6 +20,8 @@
     "DEFAULT_TEXT": "Double-click to edit",
     "STROKE_WIDTH": 2,
     "BORDER_RADIUS": 5,
+    "DELETE_BTN_RADIUS": 8,
+    "DELETE_BTN_OFFSET": 12,
     "TEXT_OFFSET_X": 10,
     "TEXT_OFFSET_Y": 25,
     "FONT_FAMILY": "Arial, sans-serif",

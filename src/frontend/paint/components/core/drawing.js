@@ -39,8 +39,8 @@ export const startDrawing = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Handle triple click for sticky notes
-    handleTripleClick(e);
+    // Handle double click for sticky notes
+    handleDoubleClick(e);
 
     state.isDrawing = true;
     state.points = [getCanvasCoords(e)];
@@ -249,11 +249,11 @@ const createSmoothTexture = (context, p1, p2) => {
 };
 
 /**
- * Handles triple click to create sticky note
+ * Handles double click to create sticky note
  * @param {MouseEvent} e - Mouse event
  * @returns {void}
  */
-const handleTripleClick = (e) => {
+const handleDoubleClick = (e) => {
     const config = getConfig();
     if (!config) return;
 
@@ -261,7 +261,7 @@ const handleTripleClick = (e) => {
     if (clickTimer) clearTimeout(clickTimer);
 
     clickTimer = setTimeout(() => {
-        if (clickCount === 3) {
+        if (clickCount === 2) {
             // Create sticky note
             if (typeof window.createStickyNote === 'function') {
                 const coords = getCanvasCoords(e);
