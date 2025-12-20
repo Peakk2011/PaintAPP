@@ -106,7 +106,15 @@ export const setupEventListeners = () => {
     });
 
     // Window events
-    window.addEventListener('resize', handleResize);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (typeof window.setupCanvas === 'function') {
+                window.setupCanvas();
+            }
+        }, 2000); // 2-second delay
+    });
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', adjustTheme);
 }
 
@@ -132,10 +140,4 @@ const handleTouchMove = (e) => {
         clientY: touch.clientY
     };
     draw(mouseEvent);
-}
-
-const handleResize = () => {
-    if (typeof window.setupCanvas === 'function') {
-        window.setupCanvas();
-    }
 }
