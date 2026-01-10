@@ -38,12 +38,15 @@ import { fetchJSON } from '../../../utils/fetch.js';
  * @property {number} dpr                       - Cached device pixel ratio getter
  * @property {Array<HistoryState>} historyStack - Undo/redo history stack
  * @property {number} historyIndex              - Current position in history
- * @property {Array<Point>} points              - Current drawing points
  * @property {Array<StickyNote>} stickyNotes    - Active sticky notes
  * @property {number} scale                     - Canvas zoom scale
  * @property {number} panX                      - Canvas pan X offset
  * @property {number} panY                      - Canvas pan Y offset
  * @property {boolean} isInitialized            - Initialization status
+ * @property {object|null} activeTab            - The currently active tab's state
+ * @property {boolean} isDrawing                - Whether the user is currently drawing.
+ * @property {boolean} isShiftDown              - Whether the shift key is currently pressed.
+ * @property {boolean} isDraggingSticky         - Whether the user is dragging a sticky note.
  */
 
 /**
@@ -137,9 +140,6 @@ export const loadConfiguration = async () => {
             globalState.historyStack.length = 0;
             globalState.historyIndex = -1;
 
-            globalState.points = new Array(1000); // Preallocate for 1000 points
-            globalState.points.length = 0;
-
             globalState.stickyNotes = new Array(50); // Preallocate for 50 notes
             globalState.stickyNotes.length = 0;
 
@@ -147,6 +147,10 @@ export const loadConfiguration = async () => {
             globalState.panX = 0;
             globalState.panY = 0;
             globalState.isInitialized = false;
+            globalState.activeTab = null;
+            globalState.isDrawing = false;
+            globalState.isShiftDown = false;
+            globalState.isDraggingSticky = false;
 
             // Cache devicePixelRatio to avoid repeated property access
             Object.defineProperty(globalState, 'dpr', {

@@ -1,9 +1,8 @@
 /* 
     PaintAPP
     Made by Mint teams
-    Samuel lakamo , Peakk2011(Peakk)
     
-    Updated: 2025-15-12
+    Updated: 2025-10-01
     License: MIT
 */
 
@@ -108,7 +107,7 @@
  */
 :root {
     /* Theme Colors */
-    --theme-bg: #0F0F0F;
+    --theme-bg: #0C0C0C;
     --theme-fg: #ffffff;
     --theme-primary: #080808;
     --theme-accent: hsl(120, 7%, 85%);
@@ -188,7 +187,7 @@
  */
 @media (prefers-color-scheme: dark) {
     :root {
-        --theme-bg: #0F0F0F;
+        --theme-bg: #0C0C0C;
         --theme-fg: #ffffff;
         --theme-primary: #080808;
         --theme-accent: hsl(120, 7%, 85%);

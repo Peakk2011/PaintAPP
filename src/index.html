@@ -1,9 +1,8 @@
 <!-- 
     PaintAPP
     Made by Mint teams
-    Samuel lakamo , Peakk2011(Peakk)
     
-    Updated: 2025-15-12
+    Updated: 2025-10-01
     License: MIT
 -->
 
@@ -25,8 +24,9 @@
         "
     />
     <title>PaintAPP</title>
-    <link rel="stylesheet" href="./frontend/stylesheet/paint.css" crossorigin="anonymous" />
     <link rel="stylesheet" href="./frontend/stylesheet/reset.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./frontend/stylesheet/paint.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./frontend/stylesheet/tabbar.css" crossorigin="anonymous" />
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
 </head>
 
@@ -41,13 +41,17 @@
         </div>
     </nav>
 
+    <!-- Tab Bar -->
+    <div id="tab-bar">
+        <div id="tabs-container"></div>
+        <button id="new-tab-btn">+</button>
+    </div>
+
     <!-- Content -->
 
     <div class="toolbar"></div>
 
-    <div id="canvasContainer">
-        <canvas id="canvas"></canvas>
-    </div>
+    <div id="canvas-area"></div>
 
     <script src="./frontend/paint/paint.js" type="module"></script>
     <script src="./frontend/data/data-loader.js" type="module"></script>

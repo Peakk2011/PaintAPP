@@ -1,11 +1,6 @@
 import { getState, getConfig } from '../utils/config.js';
-
-/**
- * @typedef {Object} HistoryState
- * @property {ImageData} imageData                  - Canvas image data
- * @property {Array<Object>} stickyNotes            - Serialized sticky notes
- * @property {number} timestamp                     - Creation timestamp
- */
+import { getActiveTab } from './tabManager.js'; 
+import { createStickyNote } from './stickyNotes.js';
 
 /**
  * @typedef {Object} ProjectData
@@ -21,10 +16,12 @@ export const saveToHistory = () => {
     try {
         const state = getState();
         const config = getConfig();
+        const activeTab = getActiveTab(); 
+        if (!activeTab) return;
 
         const now = Date.now();
-        const idx = state.historyIndex;
-        const stack = state.historyStack;
+        const idx = activeTab.historyIndex;     // Use activeTab.historyIndex
+        const stack = activeTab.historyStack;  
 
         // check update last entry if within debounce window
         if (idx > 0 && idx === stack.length - 1) {
@@ -37,20 +34,20 @@ export const saveToHistory = () => {
         }
 
         // Trim future history if we're not at the end
-        state.historyStack = stack.slice(0, idx + 1);
+        activeTab.historyStack = stack.slice(0, idx + 1);
 
         // Push new state
-        state.historyStack.push(
+        activeTab.historyStack.push(
             createHistoryState(now)
         );
 
         // Limit history size
-        const len = state.historyStack.length;
+        const len = activeTab.historyStack.length;
         
         if (len > config.constants.MAX_HISTORY) {
-            state.historyStack.shift();
+            activeTab.historyStack.shift();
         } else {
-            state.historyIndex++;
+            activeTab.historyIndex++; // Use activeTab.historyIndex
         }
     } catch (error) {
         console.error('Error saving to history:', error);
@@ -65,14 +62,17 @@ export const saveToHistory = () => {
 const createHistoryState = (timestamp) => {
     try {
         const state = getState();
-        const canvas = state.drawingCanvas;
-        const ctx = state.drawingCtx;
+        const activeTab = getActiveTab(); // Get active tab
+        if (!activeTab) return null;
+
+        const canvas = activeTab.drawingCanvas; // Use activeTab.drawingCanvas
+        const ctx = activeTab.drawingCtx;       // Use activeTab.drawingCtx
 
         // Get image data
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
         // Deep clone sticky notes efficiently
-        const notes = state.stickyNotes;
+        const notes = activeTab.stickyNotes; // Use activeTab.stickyNotes
         const notesLen = notes.length;
         const clonedNotes = new Array(notesLen);
 
@@ -106,11 +106,14 @@ const createHistoryState = (timestamp) => {
 export const undo = () => {
     try {
         const state = getState();
-        const idx = state.historyIndex;
+        const activeTab = getActiveTab(); // Get active tab
+        if (!activeTab) return;
+
+        const idx = activeTab.historyIndex; // Use activeTab.historyIndex
 
         if (idx > 0) {
-            state.historyIndex = idx - 1;
-            restoreFromHistory(state.historyStack[idx - 1]);
+            activeTab.historyIndex = idx - 1; // Use activeTab.historyIndex
+            restoreFromHistory(activeTab.historyStack[idx - 1]);
         }
     } catch (error) {
         console.error('Error undoing action:', error);
@@ -124,12 +127,15 @@ export const undo = () => {
 export const redo = () => {
     try {
         const state = getState();
-        const idx = state.historyIndex;
-        const len = state.historyStack.length;
+        const activeTab = getActiveTab(); // Get active tab
+        if (!activeTab) return;
+
+        const idx = activeTab.historyIndex; // Use activeTab.historyIndex
+        const len = activeTab.historyStack.length;
 
         if (idx < len - 1) {
-            state.historyIndex = idx + 1;
-            restoreFromHistory(state.historyStack[idx + 1]);
+            activeTab.historyIndex = idx + 1; // Use activeTab.historyIndex
+            restoreFromHistory(activeTab.historyStack[idx + 1]);
         }
     } catch (error) {
         console.error('Error redoing action:', error);
@@ -146,44 +152,42 @@ const restoreFromHistory = (historyState) => {
 
     try {
         const state = getState();
+        const activeTab = getActiveTab(); // Get active tab
+        if (!activeTab) return;
 
         // Restore canvas image data
-        state.drawingCtx.putImageData(historyState.imageData, 0, 0);
+        activeTab.drawingCtx.putImageData(historyState.imageData, 0, 0); // Use activeTab.drawingCtx
 
         // Clear existing sticky notes
-        const notes = state.stickyNotes;
+        const notes = activeTab.stickyNotes; // Use activeTab.stickyNotes
         const notesLen = notes.length;
         for (let i = notesLen - 1; i >= 0; i--) {
             notes[i].remove();
         }
-        state.stickyNotes.length = 0;
+        activeTab.stickyNotes.length = 0; // Use activeTab.stickyNotes
 
         // Restore sticky notes from history
         if (historyState.stickyNotes) {
-            // Get createStickyNote function
-            const createFunc = typeof createStickyNote === 'function'
-                ? createStickyNote
-                : window.createStickyNote;
-
-            if (createFunc) {
+            if (createStickyNote) { // Use imported createStickyNote
                 const savedNotes = historyState.stickyNotes;
                 const savedLen = savedNotes.length;
 
                 for (let i = 0; i < savedLen; i++) {
                     const noteData = savedNotes[i];
                     try {
-                        const sticky = createFunc(
+                        const sticky = createStickyNote(
                             noteData.x,
                             noteData.y,
                             noteData.width,
-                            noteData.height
+                            noteData.height,
+                            activeTab.svgGroup // Pass activeTab.svgGroup
                         );
 
                         if (sticky) {
                             sticky.text = noteData.text;
                             sticky.textElement.textContent = noteData.text;
                             sticky.rect.setAttribute('fill', noteData.color);
-                            state.stickyNotes.push(sticky);
+                            activeTab.stickyNotes.push(sticky); // Use activeTab.stickyNotes
                         }
                     } catch (noteErr) {
                         console.error('Error restoring sticky note:', noteErr);
@@ -209,12 +213,14 @@ export const saveProject = () => {
     try {
         const state = getState();
         const config = getConfig();
+        const activeTab = getActiveTab(); // Get active tab
+        if (!activeTab) return;
 
         // Convert canvas to data URL
-        const imageDataUrl = state.drawingCanvas.toDataURL();
+        const imageDataUrl = activeTab.drawingCanvas.toDataURL(); // Use activeTab.drawingCanvas
 
         // Serialize sticky notes
-        const notes = state.stickyNotes;
+        const notes = activeTab.stickyNotes; // Use activeTab.stickyNotes
         const notesLen = notes.length;
         const serializedNotes = new Array(notesLen);
 
@@ -236,8 +242,8 @@ export const saveProject = () => {
             stickyNotes: serializedNotes
         };
 
-        const jsonData = JSON.stringify(projectData);
-        localStorage.setItem(config.storage.PROJECT_KEY, jsonData);
+        // Use a unique key for each tab's project
+        localStorage.setItem(`${config.storage.PROJECT_KEY}-${activeTab.id}`, JSON.stringify(projectData));
     } catch (error) {
         console.error('Failed to save project:', error);
     }
@@ -251,8 +257,10 @@ export const loadProject = () => {
     try {
         const state = getState();
         const config = getConfig();
+        const activeTab = getActiveTab(); // Get active tab
+        if (!activeTab) return;
 
-        const savedData = localStorage.getItem(config.storage.PROJECT_KEY);
+        const savedData = localStorage.getItem(`${config.storage.PROJECT_KEY}-${activeTab.id}`); // Use unique key
         if (!savedData) return;
 
         /** @type {ProjectData} */
@@ -265,8 +273,8 @@ export const loadProject = () => {
          */
         img.onload = () => {
             try {
-                const canvas = state.drawingCanvas;
-                const ctx = state.drawingCtx;
+                const canvas = activeTab.drawingCanvas; // Use activeTab.drawingCanvas
+                const ctx = activeTab.drawingCtx; // Use activeTab.drawingCtx
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0);
@@ -290,30 +298,31 @@ export const loadProject = () => {
 
         img.src = projectData.imageDataUrl;
 
-        // Load sticky notes
-        const createFunc = typeof createStickyNote === 'function'
-            ? createStickyNote
-            : window.createStickyNote;
+        // Clear existing sticky notes before loading
+        activeTab.stickyNotes.forEach(note => note.remove());
+        activeTab.stickyNotes.length = 0;
 
-        if (createFunc && projectData.stickyNotes) {
+        // Load sticky notes
+        if (createStickyNote && projectData.stickyNotes) { // Use imported createStickyNote
             const savedNotes = projectData.stickyNotes;
             const savedLen = savedNotes.length;
 
             for (let i = 0; i < savedLen; i++) {
                 const noteData = savedNotes[i];
                 try {
-                    const sticky = createFunc(
+                    const sticky = createStickyNote(
                         noteData.x,
                         noteData.y,
                         noteData.width,
-                        noteData.height
+                        noteData.height,
+                        activeTab.svgGroup // Pass activeTab.svgGroup
                     );
 
                     if (sticky) {
                         sticky.text = noteData.text;
                         sticky.textElement.textContent = noteData.text;
                         sticky.rect.setAttribute('fill', noteData.color);
-                        state.stickyNotes.push(sticky);
+                        activeTab.stickyNotes.push(sticky); // Use activeTab.stickyNotes
                     }
                 } catch (noteErr) {
                     console.error('Error loading sticky note:', noteErr);

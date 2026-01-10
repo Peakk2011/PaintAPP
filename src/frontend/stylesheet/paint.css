@@ -1,9 +1,8 @@
 /* 
     PaintAPP
     Made by Mint teams
-    Samuel lakamo , Peakk2011(Peakk)
     
-    Updated: 2025-15-12
+    Updated: 2025-10-01
     License: MIT
 */
 
@@ -55,14 +54,14 @@
     z-index: 5;
 }
 
-.platform-win32,
-.contentTEXT {
-    display: none;
-}
-
 .platform-mac,
 .contentTEXT {
     display: block;
+}
+
+.platform-win32,
+.contentTEXT {
+    display: none;
 }
 
 .contentTEXT h1 {

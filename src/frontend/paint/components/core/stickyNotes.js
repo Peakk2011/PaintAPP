@@ -1,20 +1,22 @@
 import { getState, getConfig } from '../utils/config.js';
+import { getActiveTab } from './tabManager.js';
 import { getCanvasCoords } from './canvas.js';
 import { saveToHistory, saveProject } from './history.js';
 
 /**
  * @typedef {Object} StickyNote
- * @property {number} x                                 - X coordinate
- * @property {number} y                                 - Y coordinate
- * @property {number} width                             - Width of sticky note
- * @property {number} height                            - Height of sticky note
- * @property {string} text                              - Text content
- * @property {string} color                             - Background color
- * @property {SVGGElement} group                        - SVG group element
- * @property {SVGRectElement} rect                      - SVG rectangle element
- * @property {SVGTextElement} textElement               - SVG text element
- * @property {boolean} isEditing                        - Editing state flag
- * @property {Function} remove                          - Remove function
+ * @property {number} x - X coordinate
+ * @property {number} y - Y coordinate
+ * @property {number} width - Width of sticky note
+ * @property {number} height - Height of sticky note
+ * @property {string} text - Text content
+ * @property {string} color - Background color
+ * @property {SVGGElement} group - SVG group element
+ * @property {SVGRectElement} rect - SVG rectangle element
+ * @property {SVGTextElement} textElement - SVG text element
+ * @property {boolean} isEditing - Editing state flag
+ * @property {Function} remove - Remove function
+ * @property {Function} cleanup - Cleanup function for event listeners
  */
 
 /**
@@ -31,15 +33,31 @@ const USER_SELECT_NONE = 'none';
 
 /**
  * Creates a new sticky note element
- * @param {number} x                                    - X coordinate
- * @param {number} y                                    - Y coordinate
- * @param {number} [width]                              - Optional width
- * @param {number} [height]                             - Optional height
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} [width] - Optional width
+ * @param {number} [height] - Optional height
+ * @param {SVGGElement} [svgGroup] - Optional SVG group (for restoring from history)
  * @returns {StickyNote|null} The created sticky note object or null on error
  */
-export const createStickyNote = (x, y, width, height) => {
+export const createStickyNote = (x, y, width, height, svgGroup) => {
     try {
         const state = getState();
+        const activeTab = getActiveTab();
+        
+        if (!activeTab) {
+            console.warn('No active tab to create sticky note');
+            return null;
+        }
+
+        // Use provided svgGroup or get from active tab
+        const targetSvgGroup = svgGroup || activeTab.svgGroup;
+        
+        if (!targetSvgGroup) {
+            console.error('No SVG group available for sticky note');
+            return null;
+        }
+
         const config = getConfig().sticky;
 
         width = width | 0 || config.DEFAULT_WIDTH;
@@ -91,7 +109,7 @@ export const createStickyNote = (x, y, width, height) => {
         // Append in batch (fewer reflows)
         group.appendChild(rect);
         group.appendChild(textElement);
-        state.svgGroup.appendChild(group);
+        targetSvgGroup.appendChild(group);
 
         /** @type {StickyNote} */
         const stickyObj = {
@@ -105,16 +123,25 @@ export const createStickyNote = (x, y, width, height) => {
             rect: rect,
             textElement: textElement,
             isEditing: false,
+            cleanup: null,
             remove: () => {
                 try {
+                    if (typeof stickyObj.cleanup === 'function') {
+                        stickyObj.cleanup();
+                    }
+
                     if (stickyObj.group && stickyObj.group.parentNode) {
                         stickyObj.group.parentNode.removeChild(stickyObj.group);
                     }
-                    const state = getState();
-                    const index = state.stickyNotes.indexOf(stickyObj);
-                    if (index > -1) {
-                        state.stickyNotes.splice(index, 1);
+                    
+                    const currentTab = getActiveTab();
+                    if (currentTab && currentTab.stickyNotes) {
+                        const index = currentTab.stickyNotes.indexOf(stickyObj);
+                        if (index > -1) {
+                            currentTab.stickyNotes.splice(index, 1);
+                        }
                     }
+                    
                     saveProject();
                     saveToHistory();
                 } catch (error) {
@@ -158,13 +185,20 @@ export const createStickyNote = (x, y, width, height) => {
         deleteBtn.appendChild(deleteLine2);
         group.appendChild(deleteBtn);
 
-        deleteBtn.addEventListener('click', (e) => {
+        const onDeleteClick = (e) => {
             e.stopPropagation();
+            e.preventDefault();
             stickyObj.remove();
-        });
+        };
+
+        deleteBtn.addEventListener('click', onDeleteClick);
 
         setupStickyListeners(stickyObj);
-        state.stickyNotes.push(stickyObj);
+        
+        // Add to active tab's sticky notes
+        if (activeTab.stickyNotes) {
+            activeTab.stickyNotes.push(stickyObj);
+        }
 
         return stickyObj;
     } catch (error) {
@@ -183,7 +217,6 @@ const setupStickyListeners = (sticky) => {
         let isDragging = false;
         /** @type {DragState} */
         const dragOffset = { x: 0, y: 0 };
-        const state = getState();
 
         /**
          * @param {MouseEvent} e - Mouse event
@@ -191,9 +224,16 @@ const setupStickyListeners = (sticky) => {
          */
         const onMouseDown = (e) => {
             try {
+                const activeTab = getActiveTab();
+                if (!activeTab) return;
+                if (e.button !== 0) return;
+
                 e.stopPropagation();
+                e.preventDefault();
+                
                 isDragging = true;
-                state.isDraggingSticky = true;
+                activeTab.isDraggingSticky = true;
+                
                 const coords = getCanvasCoords(e);
                 dragOffset.x = coords.x - sticky.x;
                 dragOffset.y = coords.y - sticky.y;
@@ -211,6 +251,8 @@ const setupStickyListeners = (sticky) => {
 
             try {
                 e.stopPropagation();
+                e.preventDefault();
+                
                 const coords = getCanvasCoords(e);
                 sticky.x = coords.x - dragOffset.x;
                 sticky.y = coords.y - dragOffset.y;
@@ -228,9 +270,15 @@ const setupStickyListeners = (sticky) => {
             if (!isDragging) return;
 
             try {
+                const activeTab = getActiveTab();
+                if (activeTab) {
+                    activeTab.isDraggingSticky = false;
+                }
+
                 e.stopPropagation();
+                e.preventDefault();
                 isDragging = false;
-                state.isDraggingSticky = false;
+                
                 saveProject();
                 saveToHistory();
             } catch (error) {
@@ -245,6 +293,7 @@ const setupStickyListeners = (sticky) => {
         const onDoubleClick = (e) => {
             try {
                 e.stopPropagation();
+                e.preventDefault();
                 startStickyEditing(sticky);
             } catch (error) {
                 console.error('Error in dblclick handler:', error);
@@ -257,6 +306,13 @@ const setupStickyListeners = (sticky) => {
         
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
+
+        sticky.cleanup = () => {
+            sticky.rect.removeEventListener('mousedown', onMouseDown);
+            sticky.rect.removeEventListener('dblclick', onDoubleClick);
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
     } catch (error) {
         console.error('Error setting up sticky listeners:', error);
     }
@@ -269,7 +325,9 @@ const setupStickyListeners = (sticky) => {
  */
 const updateStickyPosition = (sticky) => {
     try {
-        sticky.group.setAttribute('transform', `translate(${sticky.x}, ${sticky.y})`);
+        const x = Math.round(sticky.x * 100) / 100;
+        const y = Math.round(sticky.y * 100) / 100;
+        sticky.group.setAttribute('transform', `translate(${x}, ${y})`);
     } catch (error) {
         console.error('Error updating sticky position:', error);
     }
@@ -285,7 +343,7 @@ const startStickyEditing = (sticky) => {
 
     try {
         sticky.isEditing = true;
-        const originalText = sticky.text; // Store original text
+        const originalText = sticky.text;
 
         const foreign = document.createElementNS(SVG_NS, 'foreignObject');
         const foreignAttrs = [
@@ -316,45 +374,70 @@ const startStickyEditing = (sticky) => {
         `;
 
         const removeEditor = () => {
-            foreign.remove();
+            if (foreign.parentNode) {
+                foreign.parentNode.removeChild(foreign);
+            }
             sticky.isEditing = false;
+        };
+
+        const saveChanges = () => {
+            const newText = textarea.value.trim();
+            if (newText) {
+                sticky.text = newText;
+                sticky.textElement.textContent = newText;
+                saveProject();
+                saveToHistory();
+            } else {
+                // If empty, revert to original
+                sticky.text = originalText;
+                sticky.textElement.textContent = originalText;
+            }
+            removeEditor();
+        };
+
+        const cancelChanges = () => {
+            sticky.text = originalText;
+            sticky.textElement.textContent = originalText;
+            removeEditor();
         };
 
         const onBlur = () => {
             try {
-                // Revert text to original on blur
-                sticky.textElement.textContent = originalText;
-                sticky.text = originalText;
-                removeEditor();
+                // CHANGED: Save changes on blur instead of canceling
+                saveChanges();
             } catch (error) {
                 console.error('Error in blur handler:', error);
-                removeEditor(); // Ensure editor is removed even on error
+                removeEditor();
             }
         };
 
         const onKeyDown = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                // Save changes
-                sticky.text = textarea.value;
-                sticky.textElement.textContent = textarea.value;
-                saveProject();
-                saveToHistory();
-                removeEditor();
+                saveChanges();
             } else if (e.key === 'Escape') {
                 e.preventDefault();
-                // Cancel changes (will be handled by blur)
-                textarea.blur();
+                cancelChanges();
             }
+            // Allow Shift+Enter for new lines
+        };
+
+        const onTextareaClick = (e) => {
+            e.stopPropagation();
         };
 
         textarea.addEventListener('blur', onBlur);
         textarea.addEventListener('keydown', onKeyDown);
+        textarea.addEventListener('click', onTextareaClick);
+        textarea.addEventListener('mousedown', onTextareaClick);
         
         foreign.appendChild(textarea);
         sticky.group.appendChild(foreign);
-        textarea.focus();
-        textarea.select(); // Select all text for easy replacement
+        
+        setTimeout(() => {
+            textarea.focus();
+            textarea.select();
+        }, 10);
     } catch (error) {
         console.error('Error starting sticky editing:', error);
         sticky.isEditing = false;
@@ -362,22 +445,66 @@ const startStickyEditing = (sticky) => {
 };
 
 /**
- * Removes all sticky notes from canvas
+ * Removes all sticky notes from the active tab's canvas
  * @returns {void}
  */
 export const removeAllStickyNotes = () => {
     try {
-        const state = getState();
-        const notes = state.stickyNotes;
-
-        // Iterate backwards
-        for (let i = notes.length - 1; i >= 0; i--) {
-            notes[i].remove();
+        const activeTab = getActiveTab();
+        if (!activeTab || !activeTab.stickyNotes) {
+            console.warn('No active tab or sticky notes to remove');
+            return;
         }
 
-        // Clear array
-        state.stickyNotes.length = 0;
+        const notes = activeTab.stickyNotes.slice(); // Create a copy to avoid mutation during iteration
+
+        // Remove all sticky notes
+        notes.forEach(note => {
+            if (note && typeof note.remove === 'function') {
+                note.remove();
+            }
+        });
+
+        // Clear array (should already be cleared by individual remove() calls, but ensure it)
+        activeTab.stickyNotes.length = 0;
     } catch (error) {
         console.error('Error removing all sticky notes:', error);
+    }
+};
+
+/**
+ * Gets all sticky notes from the active tab
+ * @returns {Array<StickyNote>} Array of sticky notes
+ */
+export const getStickyNotes = () => {
+    const activeTab = getActiveTab();
+    return activeTab && activeTab.stickyNotes ? activeTab.stickyNotes : [];
+};
+
+/**
+ * Counts sticky notes in the active tab
+ * @returns {number} Number of sticky notes
+ */
+export const getStickyNoteCount = () => {
+    const activeTab = getActiveTab();
+    return activeTab && activeTab.stickyNotes ? activeTab.stickyNotes.length : 0;
+};
+
+/**
+ * This ensures sticky notes stay in the correct position relative to the canvas
+ * @returns {void}
+ */
+export const updateAllStickyPositions = () => {
+    try {
+        const activeTab = getActiveTab();
+        if (!activeTab || !activeTab.stickyNotes) return;
+
+        activeTab.stickyNotes.forEach(sticky => {
+            if (sticky && sticky.group) {
+                updateStickyPosition(sticky);
+            }
+        });
+    } catch (error) {
+        console.error('Error updating sticky positions:', error);
     }
 };

@@ -1,10 +1,18 @@
 import { getState, getConfig, isReady, waitForReady } from '../utils/config.js';
 import { getCanvasCoords } from './canvas.js';
 import { saveToHistory, saveProject } from './history.js';
+import { getActiveTab } from './tabManager.js';
 
-let clickCount = 0;
-let clickTimer = null;
 let initPromise = null;
+
+// Double-click detection state
+let clickCount = 0;
+let lastClickTime = 0;
+let lastClickX = 0;
+let lastClickY = 0;
+let clickResetTimer = null;
+const DOUBLE_CLICK_THRESHOLD = 350;     // milliseconds - slightly longer
+const DOUBLE_CLICK_DISTANCE = 15;       // pixels - slightly larger tolerance
 
 /**
  * Ensures configuration is loaded before proceeding
@@ -21,6 +29,72 @@ const ensureReady = async () => {
 };
 
 /**
+ * Resets the click counter
+ */
+const resetClickCount = () => {
+    clickCount = 0;
+    lastClickTime = 0;
+    lastClickX = 0;
+    lastClickY = 0;
+    if (clickResetTimer) {
+        clearTimeout(clickResetTimer);
+        clickResetTimer = null;
+    }
+};
+
+/**
+ * Checks if this is a double-click
+ * @param {MouseEvent} e - Mouse event
+ * @returns {boolean} True if this is a double-click (2nd click)
+ */
+const isDoubleClick = (e) => {
+    const currentTime = Date.now();
+    const timeSinceLastClick = currentTime - lastClickTime;
+    
+    // Calculate distance from last click
+    const dx = e.clientX - lastClickX;
+    const dy = e.clientY - lastClickY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    console.log('Click detected:', {
+        clickCount: clickCount,
+        timeSinceLastClick,
+        distance,
+        threshold: DOUBLE_CLICK_THRESHOLD,
+        maxDistance: DOUBLE_CLICK_DISTANCE
+    });
+    
+    if (timeSinceLastClick > DOUBLE_CLICK_THRESHOLD || distance > DOUBLE_CLICK_DISTANCE) {
+        clickCount = 1; 
+        console.log('Resetting click count - too slow or too far');
+    } else if (lastClickTime === 0) {
+        // First click ever
+        clickCount = 1;
+        console.log('First click');
+    } else {
+        clickCount++; // Increment click count
+        console.log('Incrementing click count to:', clickCount);
+    }
+    
+    lastClickTime = currentTime;
+    lastClickX = e.clientX;
+    lastClickY = e.clientY;
+    
+    if (clickResetTimer) {
+        clearTimeout(clickResetTimer);
+    }
+    clickResetTimer = setTimeout(() => {
+        console.log('Timer expired - resetting click count');
+        resetClickCount();
+    }, DOUBLE_CLICK_THRESHOLD);
+    
+    const isDouble = clickCount === 2;
+    console.log('Is double click?', isDouble);
+    
+    return isDouble;
+};
+
+/**
  * Starts drawing operation
  * @param {MouseEvent|TouchEvent} e - Event object
  * @returns {Promise<void>}
@@ -30,23 +104,41 @@ export const startDrawing = async (e) => {
 
     await ensureReady();
     const state = getState();
-    if (!state) return;
+    const activeTab = getActiveTab();
+    if (!state || !activeTab) return;
 
-    if (state.isDraggingSticky) return;
-    if (e.target && e.target.tagName &&
-        (e.target.tagName === 'rect' || e.target.tagName === 'text')) return;
+    if (activeTab.isDraggingSticky) return;
+
+    if (e.target && e.target.tagName) {
+        const tagName = e.target.tagName.toLowerCase();
+        if (tagName === 'rect' || tagName === 'text' || 
+            tagName === 'svg' || tagName === 'g' || 
+            tagName === 'foreignobject' || tagName === 'circle' || 
+            tagName === 'line') {
+            return;
+        }
+    }
 
     e.preventDefault();
     e.stopPropagation();
 
-    // Handle double click for sticky notes
-    handleDoubleClick(e);
+    if (isDoubleClick(e)) {
+        console.log('Double-click detected, creating sticky note');
+        if (typeof window.createStickyNote === 'function') {
+            const coords = getCanvasCoords(e);
+            window.createStickyNote(coords.x, coords.y);
+        }
 
-    state.isDrawing = true;
-    state.points = [getCanvasCoords(e)];
+        resetClickCount();
+        return; 
+    }
 
-    if (state.previewCtx && state.previewCanvas) {
-        state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+    console.log('Single click, starting drawing. Click count:', clickCount);
+    activeTab.isDrawing = true;
+    activeTab.points = [getCanvasCoords(e)];
+
+    if (activeTab.previewCtx && activeTab.previewCanvas) {
+        activeTab.previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
     }
 };
 
@@ -57,50 +149,45 @@ export const startDrawing = async (e) => {
  */
 export const draw = (e) => {
     const state = getState();
-    if (!state || !state.isDrawing || state.isDraggingSticky) return;
+    const activeTab = getActiveTab();
+    if (!state || !activeTab || !activeTab.isDrawing || activeTab.isDraggingSticky) return;
 
-    const previewCtx = state.previewCtx;
-    if (!previewCtx || !state.previewCanvas) return;
+    const previewCtx = activeTab.previewCtx;
+    if (!previewCtx || !activeTab.previewCanvas) return;
 
     const currentBrush = state.brushType?.value || 'smooth';
 
     if (state.isShiftDown) {
-        // --- Straight Line Logic ---
-        const startPoint = state.points[0];
+        const startPoint = activeTab.points[0];
         const currentPoint = getCanvasCoords(e);
         
-        // Replace the entire points array with just start and end for redraw.
-        state.points = [startPoint, currentPoint];
+        activeTab.points = [startPoint, currentPoint];
 
-        // For straight line, we always clear and redraw the full line.
-        previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+        previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
 
         if (currentBrush === 'smooth') {
             previewCtx.strokeStyle = state.brushColor || '#000000';
             previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
-            drawLine(previewCtx, state.points);
-        } else { // texture brush
-            // createSmoothTexture handles drawing between two points.
-            createSmoothTexture(previewCtx, state.points[0], state.points[1]);
+            drawLine(previewCtx, activeTab.points);
+        } else {
+            createSmoothTexture(previewCtx, activeTab.points[0], activeTab.points[1]);
         }
     } else {
-        // --- Original Freeform Logic ---
-        state.points.push(getCanvasCoords(e));
+        activeTab.points.push(getCanvasCoords(e));
 
         if (currentBrush === 'smooth') {
-            previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+            previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
             previewCtx.strokeStyle = state.brushColor || '#000000';
             previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
-            drawLine(previewCtx, state.points);
+            drawLine(previewCtx, activeTab.points);
         } else {
-            const len = state.points.length;
+            const len = activeTab.points.length;
             if (len > 1) {
-                createSmoothTexture(previewCtx, state.points[len - 2], state.points[len - 1]);
+                createSmoothTexture(previewCtx, activeTab.points[len - 2], activeTab.points[len - 1]);
             }
         }
     }
 
-    // Request redraw from canvas module
     if (typeof window.requestRedraw === 'function') {
         window.requestRedraw();
     }
@@ -112,52 +199,65 @@ export const draw = (e) => {
  */
 export const stopDrawing = () => {
     const state = getState();
-    if (!state || !state.isDrawing) return;
+    const activeTab = getActiveTab();
+    if (!state || !activeTab || !activeTab.isDrawing) return;
 
-    state.isDrawing = false;
+    activeTab.isDrawing = false;
 
-    if (state.drawingCtx && state.previewCanvas) {
-        state.drawingCtx.drawImage(state.previewCanvas, 0, 0);
+    if (activeTab.drawingCtx && activeTab.previewCanvas) {
+        activeTab.drawingCtx.drawImage(activeTab.previewCanvas, 0, 0);
     }
 
-    if (state.previewCtx && state.previewCanvas) {
-        state.previewCtx.clearRect(0, 0, state.previewCanvas.width, state.previewCanvas.height);
+    if (activeTab.previewCtx && activeTab.previewCanvas) {
+        activeTab.previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
     }
 
-    // Request redraw
     if (typeof window.requestRedraw === 'function') {
         window.requestRedraw();
     }
 
-    state.points = [];
+    activeTab.points = [];
     saveProject();
     saveToHistory();
 };
 
 /**
  * Draws smooth line through points
- * @param {CanvasRenderingContext2D} context - Canvas context
- * @param {Array<{x: number, y: number}>} points - Array of points
+ * @param {CanvasRenderingContext2D} context        - Canvas context
+ * @param {Array<{x: number, y: number}>} points    - Array of points
  * @returns {void}
  */
 const drawLine = (context, points) => {
     const len = points.length;
     if (len < 2) return;
 
+    context.save();
+    
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
     context.beginPath();
     context.moveTo(points[0].x, points[0].y);
 
-    for (let i = 1; i < len - 1; i++) {
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const midX = (p1.x + p2.x) / 2;
-        const midY = (p1.y + p2.y) / 2;
-        context.quadraticCurveTo(p1.x, p1.y, midX, midY);
+    if (len === 2) {
+        context.lineTo(points[1].x, points[1].y);
+    } else {
+        for (let i = 1; i < len - 1; i++) {
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            context.quadraticCurveTo(p1.x, p1.y, midX, midY);
+        }
+
+        const last = points[len - 1];
+        context.lineTo(last.x, last.y);
     }
 
-    const last = points[len - 1];
-    context.lineTo(last.x, last.y);
     context.stroke();
+    context.restore();
 };
 
 /**
@@ -170,9 +270,10 @@ const drawLine = (context, points) => {
 const createSmoothTexture = (context, p1, p2) => {
     const state = getState();
     const config = getConfig();
+    const activeTab = getActiveTab();
 
-    if (!state || !config) {
-        console.warn('State or config not ready for texture rendering');
+    if (!state || !config || !activeTab) {
+        console.warn('State, config or activeTab not ready for texture rendering');
         return;
     }
 
@@ -203,6 +304,10 @@ const createSmoothTexture = (context, p1, p2) => {
         TEXTURE_DENSITY_MIN,
         distance / (size * TEXTURE_SIZE_MULTIPLIER)
     );
+
+    context.save();
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
 
     for (let i = 0; i < density; i++) {
         const t = i / density;
@@ -245,29 +350,6 @@ const createSmoothTexture = (context, p1, p2) => {
             context.stroke();
         }
     }
-    context.globalAlpha = 1.0;
-};
-
-/**
- * Handles double click to create sticky note
- * @param {MouseEvent} e - Mouse event
- * @returns {void}
- */
-const handleDoubleClick = (e) => {
-    const config = getConfig();
-    if (!config) return;
-
-    clickCount++;
-    if (clickTimer) clearTimeout(clickTimer);
-
-    clickTimer = setTimeout(() => {
-        if (clickCount === 2) {
-            // Create sticky note
-            if (typeof window.createStickyNote === 'function') {
-                const coords = getCanvasCoords(e);
-                window.createStickyNote(coords.x, coords.y);
-            }
-        }
-        clickCount = 0;
-    }, config.constants?.CLICK_DELAY || 300);
+    
+    context.restore();
 };

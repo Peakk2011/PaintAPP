@@ -55,11 +55,12 @@ export const platform = {
     getWindowOptions: () => {
         if (process.platform === 'win32') {
             return {
-                titleBarStyle: 'hidden',
+                // titleBarStyle: 'hidden',
+                titleBarStyle: 'default', // Stable
                 titleBarOverlay: {
                     color: '#00000000',
                     symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
-                    height: 38
+                    height: 36
                 },
                 frame: true,
             };

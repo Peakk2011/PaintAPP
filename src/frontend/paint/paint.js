@@ -1,69 +1,9 @@
-// paint.js - Main orchestrator
-
 import { loadConfiguration, getState, getConfig } from './components/utils/config.js';
-import { setupCanvas, initSVG, requestRedraw } from './components/core/canvas.js';
+import { setupCanvas, requestRedraw } from './components/core/canvas.js';
 import { setupColorPicker, adjustTheme } from './components/core/tools.js';
 import { setupEventListeners } from './components/controllers/events.js';
-import { loadProject } from './components/core/history.js';
 import { createStickyNote } from './components/core/stickyNotes.js';
-
-/**
- * @typedef {Object} PaintState
- * @property {HTMLCanvasElement} canvas                     - Main display canvas
- * @property {CanvasRenderingContext2D} ctx                 - Main canvas rendering context
- * @property {HTMLElement} canvasContainer                  - Container element for the canvas
- * @property {HTMLCanvasElement} drawingCanvas              - Off-screen drawing canvas
- * @property {CanvasRenderingContext2D} drawingCtx          - Drawing canvas context
- * @property {HTMLCanvasElement} previewCanvas              - Preview canvas for temporary drawing
- * @property {CanvasRenderingContext2D} previewCtx          - Preview canvas context
- * @property {HTMLElement} colorPickerTrigger               - Color picker trigger button
- * @property {HTMLElement} iroPickerContainer               - Iro color picker container
- * @property {HTMLInputElement} sizePicker                  - Brush size input element
- * @property {HTMLElement} sizeDisplay                      - Brush size display element
- * @property {HTMLSelectElement} brushType                  - Brush type selector
- * @property {HTMLSelectElement} exportFormat               - Export format selector
- * @property {HTMLButtonElement} clearBtn                   - Clear canvas button
- * @property {HTMLButtonElement} saveBtn                    - Save project button
- * @property {Array<ImageData>} historyStack                - History stack for undo/redo
- */
-
-/**
- * @typedef {Object} PaintConfig
- * @property {Object} dom                                   - DOM configuration
- * @property {Object} dom.IDS                               - DOM element IDs
- * @property {string} dom.IDS.canvas                        - Canvas element ID
- * @property {string} dom.IDS.canvasContainer               - Canvas container ID
- * @property {string} dom.IDS.colorPickerTrigger            - Color picker trigger ID
- * @property {string} dom.IDS.iroPickerContainer            - Iro picker container ID
- * @property {string} dom.IDS.brushSize                     - Brush size input ID
- * @property {string} dom.IDS.sizeDisplay                   - Size display element ID
- * @property {string} dom.IDS.brushType                     - Brush type selector ID
- * @property {string} dom.IDS.exportFormat                  - Export format selector ID
- * @property {string} dom.IDS.clearBtn                      - Clear button ID
- * @property {string} dom.IDS.saveBtn                       - Save button ID
- */
-
-/**
- * @typedef {'undo' | 'redo' | 'save-project' | 'export-image' | 'clear' | 'zoom-in' | 'zoom-out' | 'zoom-reset' | 'set-brush'} IPCAction
- */
-
-/**
- * @typedef {Object} ElectronAPI
- * @property {Object} ipcRenderer - IPC renderer for Electron communication
- * @property {function(string, function(Event, IPCAction, *): void): void} ipcRenderer.on - Register IPC event listener
- * @property {string} platform    - Current platform identifier
- * @property {boolean} isMac      - Whether running on macOS
- * @property {boolean} isWindows  - Whether running on Windows
- */
-
-/**
- * @typedef {Object} WindowExtensions
- * @property {function(HTMLCanvasElement): void} setupCanvas    - Setup canvas function
- * @property {function(): void} requestRedraw                   - Request canvas redraw
- * @property {function(Object): HTMLElement} createStickyNote   - Create sticky note
- * @property {function(Object=): Promise<void>} initializePaint - Initialize paint app
- * @property {ElectronAPI=} Electron - Electron API (optional, only in desktop app)
- */
+import { initializeTabs, getActiveTab } from './components/core/tabManager.js';
 
 // Expose functions to window for inter-module communication
 window.setupCanvas = setupCanvas;
@@ -74,102 +14,77 @@ window.createStickyNote = createStickyNote;
  * Main initialization function for the paint application
  * 
  * @async
- * @param {Object=} data                                    - Optional initialization data
- * @param {string=} data.color                              - Initial color value
- * @param {number=} data.brushSize                          - Initial brush size
- * @param {string=} data.brushType                          - Initial brush type
+ * @param {Object=} data                - Optional initialization data
+ * @param {string=} data.color          - Initial color value
+ * @param {number=} data.brushSize      - Initial brush size
+ * @param {string=} data.brushType      - Initial brush type
  * @returns {Promise<void>}
  * @throws {Error} When initialization fails
- * 
- * @example
- * await initializePaint({ color: '#FF0000', brushSize: 10 });
  */
 export const initializePaint = async (data) => {
     try {
         // Load configuration
         await loadConfiguration();
-        const state = getState();
-        const config = getConfig();
-
-        // Initialize DOM elements
-        initializeDOMElements();
-
-        // Setup components
+        // Initialize UI elements (non-tab-specific)
+        initializeUIElements();
+        // Setup non-canvas components
         setupColorPicker(data);
-        setupCanvas();
-        loadProject();
-        setupEventListeners();
         setupIPCHandlers();
         setupPlatform();
         adjustTheme();
 
-        // Initial history save
-        if (state.historyStack.length === 0) {
-            import('./components/core/history.js')
-                .then(module => module.saveToHistory());
-        }
+        // Initialize tab system
+        initializeTabs();
 
-        // console.log('Paint app initialized successfully');
+        // Setup event listeners
+        setupEventListeners();
+
     } catch (error) {
         console.error('Failed to initialize paint app:', error);
+        throw error;
     }
-}
+};
 
 /**
- * Initialize all DOM elements and store references in the global state
- * 
- * @private
- * @returns {void}
- * @throws {Error} When required DOM elements are not found
- * 
- * @description
- * This function:
- * - Retrieves and caches references to main canvas and container elements
- * - Creates off-screen drawing and preview canvases with 2D contexts
- * - Initializes references to UI control elements (color picker, size picker, etc.)
- * - Uses willReadFrequently flag for optimized canvas context performance
+ * Initialize non-canvas-specific UI elements and store references in the global state
  */
-const initializeDOMElements = () => {
+const initializeUIElements = () => {
     const state = getState();
     const config = getConfig();
+
+    if (!state || !config) {
+        throw new Error('State or config not loaded');
+    }
+
     const ids = config.dom.IDS;
 
-    // Main canvas
-    /** @type {HTMLCanvasElement} */
-    state.canvas = document.getElementById(ids.canvas);
-    /** @type {CanvasRenderingContext2D} */
-    state.ctx = state.canvas.getContext('2d', { willReadFrequently: true });
-    /** @type {HTMLElement} */
-    state.canvasContainer = document.getElementById(ids.canvasContainer);
-
-    // Drawing canvases
-    /** @type {HTMLCanvasElement} */
-    state.drawingCanvas = document.createElement('canvas');
-    /** @type {CanvasRenderingContext2D} */
-    state.drawingCtx = state.drawingCanvas.getContext('2d', { willReadFrequently: true });
-    /** @type {HTMLCanvasElement} */
-    state.previewCanvas = document.createElement('canvas');
-    /** @type {CanvasRenderingContext2D} */
-    state.previewCtx = state.previewCanvas.getContext('2d', { willReadFrequently: true });
-
     // UI elements
-    /** @type {HTMLElement} */
     state.colorPickerTrigger = document.getElementById(ids.colorPickerTrigger);
-    /** @type {HTMLElement} */
     state.iroPickerContainer = document.getElementById(ids.iroPickerContainer);
-    /** @type {HTMLInputElement} */
     state.sizePicker = document.getElementById(ids.brushSize);
-    /** @type {HTMLElement} */
     state.sizeDisplay = document.getElementById(ids.sizeDisplay);
-    /** @type {HTMLSelectElement} */
     state.brushType = document.getElementById(ids.brushType);
-    /** @type {HTMLSelectElement} */
     state.exportFormat = document.getElementById(ids.exportFormat);
-    /** @type {HTMLButtonElement} */
     state.clearBtn = document.getElementById(ids.clearBtn);
-    /** @type {HTMLButtonElement} */
     state.saveBtn = document.getElementById(ids.saveBtn);
-}
+
+    // Log warnings for missing elements
+    const elementChecks = [
+        { name: 'colorPickerTrigger', element: state.colorPickerTrigger },
+        { name: 'iroPickerContainer', element: state.iroPickerContainer },
+        { name: 'sizePicker', element: state.sizePicker },
+        { name: 'sizeDisplay', element: state.sizeDisplay },
+        { name: 'brushType', element: state.brushType },
+        { name: 'clearBtn', element: state.clearBtn },
+        { name: 'saveBtn', element: state.saveBtn }
+    ];
+
+    elementChecks.forEach(check => {
+        if (!check.element) {
+            console.warn(`Not found: ${check.name} (${ids[check.name]})`);
+        }
+    });
+};
 
 /**
  * Setup IPC handlers for Electron desktop app
@@ -239,7 +154,7 @@ const setupIPCHandlers = () => {
             }
         );
     }
-}
+};
 
 /**
  * Apply platform-specific styling to the document body
@@ -274,7 +189,7 @@ const setupPlatform = () => {
             document.body.classList.add('windows');
         }
     }
-}
+};
 
 // Export for use in HTML
 if (typeof window !== 'undefined') {
