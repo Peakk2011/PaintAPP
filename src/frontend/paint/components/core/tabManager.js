@@ -5,6 +5,7 @@ import { setupCanvasListeners, cleanupCanvasListeners } from '../controllers/eve
 
 let tabCounter = 0;
 const tabs = [];
+let newlyCreatedTabId = null;
 let activeTabId = null;
 
 /**
@@ -81,7 +82,7 @@ const renderTabs = () => {
 
     if (tabs.length === 1) {
         tabsContainer.style.display = 'none';
-        if (tabBar) tabBar.classList.add('hidden');
+        if (tabBar) tabBar.classList.remove('hidden'); // Keep tab bar visible
         if (canvasArea) canvasArea.classList.add('single-tab');
         return;
     }
@@ -95,6 +96,9 @@ const renderTabs = () => {
         const tabButton = document.createElement('button');
         tabButton.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
         tabButton.setAttribute('data-tab-id', tab.id);
+        
+        const isNewTab = (tab.id === newlyCreatedTabId);
+        console.log('Rendering tab:', tab.id, 'isNew:', isNewTab); // Debug log
         
         const tabName = document.createElement('span');
         tabName.className = 'tab-name';
@@ -118,6 +122,18 @@ const renderTabs = () => {
 
         tabButton.addEventListener('click', () => switchTab(tab.id));
         tabsContainer.appendChild(tabButton);
+        
+        // Add animation class AFTER appending to DOM
+        if (isNewTab) {
+            console.log('Adding tab-new class to:', tab.id); // Debug log
+            // Use requestAnimationFrame to ensure DOM is ready
+            requestAnimationFrame(() => {
+                tabButton.classList.add('tab-new');
+                console.log('Class added, classList:', tabButton.classList.toString()); // Debug log
+            });
+            // Clear the newly created flag after animation is set
+            newlyCreatedTabId = null;
+        }
     });
 };
 
@@ -234,6 +250,10 @@ export const createNewTab = () => {
     if (!newTab) return;
 
     tabs.push(newTab);
+    
+    // Created tab for animation
+    newlyCreatedTabId = newTab.id;
+    
     switchTab(newTab.id);
 
     // Setup canvas for new tab
@@ -454,11 +474,28 @@ export const initializeTabs = () => {
     }
 
     tabsContainer.style.display = 'none';
-    if (tabBar) tabBar.classList.add('hidden');
+    if (tabBar) tabBar.classList.remove('hidden');
     if (canvasArea) canvasArea.classList.add('single-tab');
 
     // Create the first tab
-    createNewTab();
+    const firstTab = createTabState();
+    if (firstTab) {
+        tabs.push(firstTab);
+        switchTab(firstTab.id);
+        
+        const mainState = getState();
+        mainState.activeTab = firstTab;
+        
+        try {
+            setupCanvas();
+            initSVG();
+            setupCanvasListeners();
+            saveToHistory();
+            requestRedraw();
+        } catch (error) {
+            console.error('Error setting up first tab:', error);
+        }
+    }
 
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
