@@ -1,0 +1,82 @@
+{
+  "name": "PaintAPP Configuration",
+  "version": "1.1.0",
+  "constants": {
+    "MAX_HISTORY": 20,
+    "CLICK_DELAY": 400,
+    "HISTORY_DEBOUNCE": 500,
+    "GRID_SIZE": 50,
+    "MIN_SCALE": 0.95,
+    "MAX_SCALE": 10,
+    "ZOOM_SENSITIVITY": 0.005,
+    "PAN_SENSITIVITY": 0.5,
+    "ZOOM_STEP": 1.1
+  },
+  "sticky": {
+    "DEFAULT_WIDTH": 200,
+    "DEFAULT_HEIGHT": 150,
+    "DEFAULT_COLOR": "#ffeb3b",
+    "DEFAULT_STROKE": "#fbc02d",
+    "DEFAULT_TEXT": "Double-click to edit",
+    "STROKE_WIDTH": 2,
+    "BORDER_RADIUS": 5,
+    "DELETE_BTN_RADIUS": 8,
+    "DELETE_BTN_OFFSET": 12,
+    "TEXT_OFFSET_X": 10,
+    "TEXT_OFFSET_Y": 25,
+    "FONT_FAMILY": "Arial, sans-serif",
+    "FONT_SIZE": 14,
+    "TEXT_COLOR": "#333"
+  },
+  "canvas": {
+    "DEFAULT_WIDTH": 7680,
+    "DEFAULT_HEIGHT": 4320,
+    "BACKGROUND_COLOR_LIGHT": "#ffffff",
+    "BACKGROUND_COLOR_DARK": "#1e1e1e"
+  },
+  "brush": {
+    "DEFAULT_COLOR_LIGHT": "#000000",
+    "DEFAULT_COLOR_DARK": "#ffffff",
+    "TEXTURE_DENSITY_MIN": 4,
+    "TEXTURE_SIZE_MULTIPLIER": 0.04,
+    "TEXTURE_JITTER": 0.1,
+    "TEXTURE_BRISTLE_ANGLE": 0.25,
+    "TEXTURE_BRISTLE_LENGTH_MIN": 0.4,
+    "TEXTURE_BRISTLE_LENGTH_MAX": 0.6,
+    "TEXTURE_BRISTLE_WIDTH_MIN": 0.125,
+    "TEXTURE_BRISTLE_WIDTH_MAX": 0.166,
+    "TEXTURE_ALPHA_MIN": 0.7,
+    "TEXTURE_ALPHA_MAX": 0.9,
+    "TEXTURE_INK_FLOW_CHANCE": 0.2
+  },
+  "export": {
+    "DEFAULT_FORMAT": "png",
+    "FORMATS": ["png", "jpg", "webp"],
+    "JPEG_QUALITY": 0.95,
+    "WEBP_QUALITY": 0.95,
+    "FILENAME_PREFIX": "drawing_"
+  },
+  "storage": {
+    "PROJECT_KEY": "PaintAPP-Progress"
+  },
+  "dom": {
+    "IDS": {
+      "canvas": "canvas",
+      "canvasContainer": "canvasContainer",
+      "colorPickerTrigger": "color-picker-trigger",
+      "iroPickerContainer": "iro-picker-container",
+      "brushSize": "brushSize",
+      "sizeDisplay": "sizeDisplay",
+      "brushType": "brushType",
+      "exportFormat": "exportFormat",
+      "clearBtn": "clearBtn",
+      "saveBtn": "saveBtn"
+    }
+  },
+  "colorPicker": {
+    "WIDTH": 150,
+    "BORDER_WIDTH": 2,
+    "BORDER_COLOR": "#2e2e2e",
+    "LAYOUT_DIRECTION": "horizontal"
+  }
+}
