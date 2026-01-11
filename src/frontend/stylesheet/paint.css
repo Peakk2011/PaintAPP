@@ -46,33 +46,6 @@
     top: 0;
 }
 
-.contentTEXT {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 5;
-}
-
-.platform-mac,
-.contentTEXT {
-    display: block;
-}
-
-.platform-win32,
-.contentTEXT {
-    display: none;
-}
-
-.contentTEXT h1 {
-    font-family: var(--font-text), sans-serif;
-    font-weight: 400;
-    font-size: 13.5px;
-    letter-spacing: 0.2px;
-    transform: translate(0px, 1.25px);
-    color: var(--text-primary);
-}
-
 #canvasContainer {
     position: fixed;
     top: 0;
@@ -127,6 +100,9 @@ select {
     -moz-appearance: none;
     appearance: none;
     text-align: center;
+    font-family: var(--font-text), sans-serif;
+    font-weight: 550;
+    letter-spacing: 0.2px;
     border: solid 0px transparent;
     outline: solid 0px transparent;
     background-color: transparent;
@@ -216,7 +192,9 @@ button {
     border-radius: 100vmax;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 550;
+    font-family: var(--font-text), sans-serif;
+    letter-spacing: 0.2px;
     transition: background 0.2s;
 }
 

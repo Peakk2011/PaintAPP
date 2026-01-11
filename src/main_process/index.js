@@ -12,14 +12,11 @@ import { applyCommandLineSwitches } from './config.js';
 /**
  * Initialize the application
  */
-export const initializeApp = () => {
-    logger.info('Initializing PaintAPP main process...');
+const initPaintAPP = () => {
+    // logger.info('Initializing PaintAPP main process');
 
     // Apply command line switches for performance
     applyCommandLineSwitches();
-
-    // Note: electron-squirrel-startup needs to be imported properly
-    // We'll handle this differently
 
     // Set up application lifecycle event handlers
     handleAppLifecycle();
@@ -29,6 +26,8 @@ export const initializeApp = () => {
 
     logger.info('PaintAPP main process initialized.');
 };
+
+export default initPaintAPP;
 
 export * from './logger.js';
 export * from './config.js';

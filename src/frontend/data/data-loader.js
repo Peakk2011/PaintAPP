@@ -231,8 +231,8 @@ const initApplication = async () => {
         });
 
         // Set page metadata
-        document.title = data.pageTitle;
-        document.getElementById('headerTitle').textContent = data.headerTitle;
+        // document.title = data.pageTitle;
+        // document.getElementById('headerTitle').textContent = data.headerTitle;
 
         // Create navigation
         createNavigation(data.navLinks);

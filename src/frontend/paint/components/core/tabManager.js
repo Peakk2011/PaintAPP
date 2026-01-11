@@ -66,6 +66,50 @@ const createTabState = () => {
 };
 
 /**
+ * Adjusts tab widths based on available space
+ */
+const adjustTabWidths = () => {
+    const tabsContainer = document.getElementById('tabs-container');
+    const newTabBtn = document.getElementById('new-tab-btn');
+    const tabBar = document.getElementById('tab-bar');
+    
+    if (!tabsContainer || !newTabBtn || !tabBar || tabs.length < 2) {
+        return;
+    }
+
+    const tabBarWidth = tabBar.offsetWidth;
+    const newTabBtnWidth = newTabBtn.offsetWidth;
+    const availableWidth = tabBarWidth - newTabBtnWidth - 20;
+
+    const tabElements = tabsContainer.querySelectorAll('.tab');
+    const tabCount = tabElements.length;
+
+    if (tabCount === 0) return;
+
+    // Calculate width per tab
+    const idealWidth = availableWidth / tabCount;
+    
+    // Set constraints
+    const minWidth = 80;
+    const maxWidth = 180;
+    
+    let finalWidth;
+    
+    if (idealWidth >= maxWidth) {
+        finalWidth = maxWidth;
+    } else if (idealWidth >= minWidth) {
+        finalWidth = idealWidth;
+    } else {
+        finalWidth = minWidth;
+    }
+
+    tabElements.forEach(tab => {
+        tab.style.flexBasis = `${finalWidth}px`;
+        tab.style.width = `${finalWidth}px`;
+    });
+};
+
+/**
  * Renders the tab bar based on the current tabs array
  */
 const renderTabs = () => {
@@ -82,7 +126,7 @@ const renderTabs = () => {
 
     if (tabs.length === 1) {
         tabsContainer.style.display = 'none';
-        if (tabBar) tabBar.classList.remove('hidden'); // Keep tab bar visible
+        if (tabBar) tabBar.classList.remove('hidden');
         if (canvasArea) canvasArea.classList.add('single-tab');
         return;
     }
@@ -98,7 +142,6 @@ const renderTabs = () => {
         tabButton.setAttribute('data-tab-id', tab.id);
         
         const isNewTab = (tab.id === newlyCreatedTabId);
-        console.log('Rendering tab:', tab.id, 'isNew:', isNewTab); // Debug log
         
         const tabName = document.createElement('span');
         tabName.className = 'tab-name';
@@ -125,15 +168,16 @@ const renderTabs = () => {
         
         // Add animation class AFTER appending to DOM
         if (isNewTab) {
-            console.log('Adding tab-new class to:', tab.id); // Debug log
-            // Use requestAnimationFrame to ensure DOM is ready
             requestAnimationFrame(() => {
                 tabButton.classList.add('tab-new');
-                console.log('Class added, classList:', tabButton.classList.toString()); // Debug log
             });
-            // Clear the newly created flag after animation is set
             newlyCreatedTabId = null;
         }
+    });
+
+    // Adjust widths after rendering
+    requestAnimationFrame(() => {
+        adjustTabWidths();
     });
 };
 
@@ -145,17 +189,15 @@ const renderTabs = () => {
 const startRenaming = (tab, tabNameElement) => {
     const currentName = tab.name;
     
-    // Create input element
     const input = document.createElement('input');
     input.type = 'text';
     input.value = currentName;
     input.className = 'tab-name-input';
     
-    // Store reference to parent for safer DOM manipulation
     const parentElement = tabNameElement.parentElement;
     if (!parentElement) return;
     
-    let isFinishing = false; // Prevent multiple calls
+    let isFinishing = false;
     
     const finishRenaming = (save) => {
         if (isFinishing) return;
@@ -166,7 +208,6 @@ const startRenaming = (tab, tabNameElement) => {
             tab.name = newName;
         }
         
-        // Restore span safely
         const newSpan = document.createElement('span');
         newSpan.className = 'tab-name';
         newSpan.textContent = tab.name;
@@ -179,7 +220,6 @@ const startRenaming = (tab, tabNameElement) => {
             try {
                 input.replaceWith(newSpan);
             } catch (e) {
-                // Fallback: remove input and append span
                 if (input.parentElement) {
                     input.parentElement.removeChild(input);
                 }
@@ -188,14 +228,11 @@ const startRenaming = (tab, tabNameElement) => {
         }
     };
     
-    // Replace span with input
     tabNameElement.replaceWith(input);
     input.focus();
     input.select();
     
-    // Event handlers
     const onBlur = () => {
-        // Small delay to allow other events to process
         setTimeout(() => finishRenaming(true), 10);
     };
     
@@ -226,7 +263,6 @@ const syncGlobalStateWithTab = (tab) => {
     const mainState = getState();
     if (!mainState || !tab) return;
 
-    // Update global state to point to active tab
     mainState.activeTab = tab;
     mainState.scale = tab.zoom;
     mainState.panX = tab.pan.x;
@@ -250,13 +286,10 @@ export const createNewTab = () => {
     if (!newTab) return;
 
     tabs.push(newTab);
-    
-    // Created tab for animation
     newlyCreatedTabId = newTab.id;
     
     switchTab(newTab.id);
 
-    // Setup canvas for new tab
     const mainState = getState();
     mainState.activeTab = newTab;
 
@@ -287,19 +320,15 @@ export const switchTab = (tabId) => {
     }
 
     if (previousTab) {
-        // Don't call syncTabWithGlobalState to let each tab keep its own state
-        // Cleanup listeners on previous tab
         if (previousTab.canvasContainer && previousTab.canvasContainer._cleanupListeners) {
             cleanupCanvasListeners(previousTab.canvasContainer);
         }
     }
 
-    // Update active tab
     activeTabId = tabId;
 
     syncGlobalStateWithTab(newTab);
 
-    // Update DOM visibility
     document.querySelectorAll('.canvas-container').forEach(container => {
         container.classList.remove('active');
         container.style.display = 'none';
@@ -310,18 +339,15 @@ export const switchTab = (tabId) => {
         newTab.canvasContainer.style.display = 'block';
     }
 
-    // Update tab buttons
     renderTabs();
 
     try {
         setupCanvas();
         setupCanvasListeners();
         
-        // IMPORTANT: Update the visual transform to match the tab's zoom/pan state
         if (typeof window.updateViewTransform === 'function') {
             window.updateViewTransform();
         } else {
-            // Fallback if function not exposed
             import('./canvas.js').then(m => {
                 if (m.updateViewTransform) {
                     m.updateViewTransform();
@@ -343,7 +369,6 @@ export const closeTab = (tabId) => {
     const tabIndex = tabs.findIndex(tab => tab.id === tabId);
     if (tabIndex === -1) return;
 
-    // Prevent closing last tab
     if (tabs.length === 1) {
         console.warn('Cannot close the last tab');
         return;
@@ -351,7 +376,6 @@ export const closeTab = (tabId) => {
 
     const tabToClose = tabs[tabIndex];
     
-    // Clean up event listeners
     if (tabToClose.canvasContainer) {
         cleanupCanvasListeners(tabToClose.canvasContainer);
     }
@@ -497,7 +521,16 @@ export const initializeTabs = () => {
         }
     }
 
-    // Add keyboard shortcuts
+    // Add resize listener for responsive tabs
+    let resizeTimeout;
+    
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            adjustTabWidths();
+        }, 100);
+    });
+
     document.addEventListener('keydown', (e) => {
         // Ctrl/Cmd + T: New tab
         if ((e.ctrlKey || e.metaKey) && e.key === 't') {

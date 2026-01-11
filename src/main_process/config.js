@@ -55,8 +55,8 @@ export const platform = {
     getWindowOptions: () => {
         if (process.platform === 'win32') {
             return {
-                // titleBarStyle: 'hidden',
-                titleBarStyle: 'default', // Stable
+                titleBarStyle: 'hidden', // Stable
+                // titleBarStyle: 'default',
                 titleBarOverlay: {
                     color: '#00000000',
                     symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',

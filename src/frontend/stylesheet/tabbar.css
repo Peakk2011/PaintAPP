@@ -1,5 +1,5 @@
 /* 
-    PaintAPP
+    PaintAPP - Responsive Tabs
     Made by Mint teams
   
     Updated: 2025-10-01
@@ -26,6 +26,11 @@
 .platform-darwin #tab-bar {
     width: calc(100% - 80px);
     left: 80px;
+}
+
+.platform-win32 #tab-bar {
+    width: calc(100% - 185px);
+    left: 42px;
 }
 
 #tab-bar.hidden {
@@ -59,8 +64,9 @@
     font-size: 14px;
     color: var(--text-secondary);
 
-    max-width: 180px;
-    min-width: 110px;
+    flex: 1 1 auto;
+    min-width: 55px;
+    max-width: 110px;
     text-align: left;
 
     padding: 0 1rem;
@@ -144,6 +150,7 @@
     pointer-events: auto;
     opacity: 75%;
     -webkit-app-region: no-drag;
+    margin-left: 4px;
 }
 
 .close-tab-btn:hover {
@@ -160,6 +167,7 @@
     outline: none;
     background-color: transparent;
     color: var(--text-primary);
+    font-family: var(--font-display), sans-serif;
     cursor: pointer;
     border-radius: 6px;
     flex-shrink: 0;
@@ -179,8 +187,8 @@
     opacity: 100%;
 }
 
-#new-tab-btn:active {
-    transform: scale(0.95);
+.platform-win32 #new-tab-btn {
+    left: 0;
 }
 
 /* Canvas Area */
