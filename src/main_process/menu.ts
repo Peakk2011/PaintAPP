@@ -1,12 +1,28 @@
-import { app } from 'electron';
+/**
+ * @file Menu configuration for the main process.
+ * @author Peakk2011 <peakk3984@gmail.com>
+ */
+
+import { app, MenuItemConstructorOptions, BrowserWindow } from 'electron';
+
+/**
+ * Window size configuration
+ */
+interface WindowSize {
+    width: number;
+    height: number;
+}
 
 /**
  * Creates the application menu template for macOS.
- * @param {Function} createWindow - A function to create a new application window.
- * @param {object} windowSize - An object containing default window dimensions.
- * @returns {Electron.MenuItemConstructorOptions[]} The menu template.
+ * @param createWindow - A function to create a new application window.
+ * @param windowSize - An object containing default window dimensions.
+ * @returns The menu template.
  */
-export const createMacMenu = (createWindow, windowSize) => {
+export const createMacMenu = (
+    createWindow: () => Promise<BrowserWindow>,
+    windowSize: WindowSize
+): MenuItemConstructorOptions[] => {
     return [
         {
             label: app.name,
@@ -29,7 +45,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Export Image',
                     accelerator: 'CmdOrCtrl+Shift+S',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'export-image');
                         }
                     }
@@ -38,7 +54,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Clear',
                     accelerator: 'CmdOrCtrl+C',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'clear');
                         }
                     }
@@ -52,7 +68,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Undo',
                     accelerator: 'CmdOrCtrl+Z',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'undo');
                         }
                     }
@@ -61,7 +77,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Redo',
                     accelerator: 'Shift+CmdOrCtrl+Z',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'redo');
                         }
                     }
@@ -75,7 +91,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Zoom In',
                     accelerator: 'CmdOrCtrl+=',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'zoom-in');
                         }
                     }
@@ -84,7 +100,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Zoom Out',
                     accelerator: 'CmdOrCtrl+-',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'zoom-out');
                         }
                     }
@@ -93,7 +109,7 @@ export const createMacMenu = (createWindow, windowSize) => {
                     label: 'Reset Zoom',
                     accelerator: 'CmdOrCtrl+0',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('trigger-action', 'zoom-reset');
                         }
                     }
@@ -136,10 +152,10 @@ export const createMacMenu = (createWindow, windowSize) => {
 
 /**
  * Creates the context menu template.
- * @param {string} currentBrush - Current brush type ('smooth' | 'texture')
- * @returns {Electron.MenuItemConstructorOptions[]}
+ * @param currentBrush - Current brush type ('smooth' | 'texture')
+ * @returns The menu template
  */
-export const createContextMenu = (currentBrush) => {
+export const createContextMenu = (currentBrush?: string): MenuItemConstructorOptions[] => {
     // Set default if currentBrush is undefined
     const brushType = currentBrush || 'smooth';
 
@@ -148,7 +164,7 @@ export const createContextMenu = (currentBrush) => {
             label: 'Undo',
             accelerator: 'CmdOrCtrl+Z',
             click: (item, focusedWindow) => {
-                if (focusedWindow) {
+                if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                     focusedWindow.webContents.send('trigger-action', 'undo');
                 }
             }
@@ -157,7 +173,7 @@ export const createContextMenu = (currentBrush) => {
             label: 'Redo',
             accelerator: 'Shift+CmdOrCtrl+Z',
             click: (item, focusedWindow) => {
-                if (focusedWindow) {
+                if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                     focusedWindow.webContents.send('trigger-action', 'redo');
                 }
             }
@@ -167,7 +183,7 @@ export const createContextMenu = (currentBrush) => {
             label: 'Save Project',
             accelerator: 'CmdOrCtrl+S',
             click: (item, focusedWindow) => {
-                if (focusedWindow) {
+                if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                     focusedWindow.webContents.send('trigger-action', 'save-project');
                 }
             }
@@ -176,7 +192,7 @@ export const createContextMenu = (currentBrush) => {
             label: 'Export Image',
             accelerator: 'CmdOrCtrl+Shift+S',
             click: (item, focusedWindow) => {
-                if (focusedWindow) {
+                if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                     focusedWindow.webContents.send('trigger-action', 'export-image');
                 }
             }
@@ -184,7 +200,7 @@ export const createContextMenu = (currentBrush) => {
         {
             label: 'Clear Canvas',
             click: (item, focusedWindow) => {
-                if (focusedWindow) {
+                if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                     focusedWindow.webContents.send('trigger-action', 'clear');
                 }
             }
@@ -198,7 +214,7 @@ export const createContextMenu = (currentBrush) => {
                     type: 'radio',
                     checked: brushType === 'smooth',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('set-brush', 'smooth');
                         }
                     }
@@ -208,7 +224,7 @@ export const createContextMenu = (currentBrush) => {
                     type: 'radio',
                     checked: brushType === 'texture',
                     click: (item, focusedWindow) => {
-                        if (focusedWindow) {
+                        if (focusedWindow && focusedWindow instanceof BrowserWindow) {
                             focusedWindow.webContents.send('set-brush', 'texture');
                         }
                     }
@@ -217,3 +233,4 @@ export const createContextMenu = (currentBrush) => {
         }
     ];
 };
+

@@ -3,15 +3,23 @@
  * @author Peakk2011 <peakk3984@gmail.com>
  */
 
-import { ipcMain, BrowserWindow, Menu, dialog } from 'electron';
-import fs from 'fs';
+import { ipcMain, BrowserWindow, Menu, dialog, IpcMainEvent } from 'electron';
+import fs from 'node:fs';
 import { createContextMenu } from './menu.js';
 import { logger } from './logger.js';
 
 /**
+ * Payload for save-image IPC event
+ */
+interface SaveImagePayload {
+    dataUrl: string;
+    format: string;
+}
+
+/**
  * Set up all IPC communication handlers
  */
-export const setupIpcHandlers = () => {
+export const setupIpcHandlers = (): void => {
     logger.info('Setting up IPC handlers');
 
     // Context menu handler
@@ -26,12 +34,10 @@ export const setupIpcHandlers = () => {
 /**
  * Handle save-image IPC event.
  * Shows a save dialog and writes the image data to the selected file.
- * @param {Electron.IpcMainEvent} event         - IPC event
- * @param {object} payload                      - Data payload
- * @param {string} payload.dataUrl              - Base64 encoded data URL of the image
- * @param {string} payload.format               - The image format (e.g., 'png', 'jpg')
+ * @param event - IPC event
+ * @param payload - Data payload
  */
-const handleSaveImage = async (event, { dataUrl, format }) => {
+const handleSaveImage = async (event: IpcMainEvent, payload: SaveImagePayload): Promise<void> => {
     const window = BrowserWindow.fromWebContents(event.sender);
     if (!window || window.isDestroyed()) {
         logger.warn(
@@ -44,10 +50,10 @@ const handleSaveImage = async (event, { dataUrl, format }) => {
     try {
         const { filePath, canceled } = await dialog.showSaveDialog(window, {
             title: 'Save Image',
-            defaultPath: `drawing-${Date.now()}.${format}`,
+            defaultPath: `drawing-${Date.now()}.${payload.format}`,
 
             filters: [
-                { name: 'Images', extensions: [format] },
+                { name: 'Images', extensions: [payload.format] },
                 { name: 'All Files', extensions: ['*'] }
             ]
         });
@@ -58,7 +64,7 @@ const handleSaveImage = async (event, { dataUrl, format }) => {
         }
 
         // The data URL is base64 encoded, so we need to decode it to a buffer
-        const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+        const base64Data = payload.dataUrl.replace(/^data:image\/\w+;base64,/, '');
         const dataBuffer = Buffer.from(base64Data, 'base64');
 
         await fs.promises.writeFile(
@@ -73,17 +79,17 @@ const handleSaveImage = async (event, { dataUrl, format }) => {
         
         dialog.showErrorBox(
             'Save Error',
-            `Failed to save the image:\n${error.message}`
+            `Failed to save the image:\n${error instanceof Error ? error.message : String(error)}`
         );
     }
 };
 
 /**
  * Handle show-context-menu IPC event
- * @param {Electron.IpcMainEvent} event - IPC event
- * @param {string} currentBrush - Current brush style
+ * @param event - IPC event
+ * @param currentBrush - Current brush style
  */
-const handleShowContextMenu = (event, currentBrush) => {
+const handleShowContextMenu = (event: IpcMainEvent, currentBrush: string): void => {
     logger.debug('Context menu requested', { currentBrush });
 
     const template = createContextMenu(currentBrush);
@@ -97,3 +103,4 @@ const handleShowContextMenu = (event, currentBrush) => {
         logger.warn('Cannot show context menu: window not found or destroyed');
     }
 };
+

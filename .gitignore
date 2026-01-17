@@ -91,5 +91,8 @@ typings/
 # Electron-Forge
 out/
 
+# TypeScript compiled output
+dist/
+
 # VS code counter
 .VSCodeCounter

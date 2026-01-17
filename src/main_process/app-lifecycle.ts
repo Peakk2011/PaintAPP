@@ -3,14 +3,14 @@
  * @author Peakk2011 <peakk3984@gmail.com>
  */
 
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Event, WebContents, Certificate } from 'electron';
 import { logger } from './logger.js';
 import { createMainWindow } from './window-manager.js';
 
 /**
  * Handle application lifecycle events
  */
-export const handleAppLifecycle = async () => {
+export const handleAppLifecycle = async (): Promise<void> => {
     const startTime = Date.now();
     logger.info('Setting up application lifecycle handlers');
 
@@ -24,7 +24,7 @@ export const handleAppLifecycle = async () => {
                 return;
             }
         } catch (error) {
-            logger.debug('electron-squirrel-startup not available or not needed', error);
+            logger.debug('electron-squirrel-startup not available or not needed', error as Record<string, unknown>);
         }
     }
 
@@ -53,7 +53,7 @@ export const handleAppLifecycle = async () => {
 /**
  * Handle macOS activation event
  */
-const handleActivate = () => {
+const handleActivate = (): void => {
     logger.debug('App activated');
 
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -64,7 +64,7 @@ const handleActivate = () => {
 /**
  * Handle window-all-closed event
  */
-const handleWindowAllClosed = () => {
+const handleWindowAllClosed = (): void => {
     logger.info('All windows closed');
 
     // Quit app on all platforms except macOS
@@ -75,14 +75,21 @@ const handleWindowAllClosed = () => {
 
 /**
  * Handle certificate errors
- * @param {Electron.Event} event - Event object
- * @param {Electron.WebContents} webContents - WebContents instance
- * @param {string} url - URL with certificate error
- * @param {string} error - Error description
- * @param {Electron.Certificate} certificate - Certificate
- * @param {Function} callback - Callback function
+ * @param event - Event object
+ * @param webContents - WebContents instance
+ * @param url - URL with certificate error
+ * @param error - Error description
+ * @param certificate - Certificate
+ * @param callback - Callback function
  */
-const handleCertificateError = (event, webContents, url, error, certificate, callback) => {
+const handleCertificateError = (
+    event: Event,
+    webContents: WebContents,
+    url: string,
+    error: string,
+    certificate: Certificate,
+    callback: (isTrusted: boolean) => void
+): void => {
     // Allow certificate errors in development mode
     if (process.env.NODE_ENV === 'development') {
         logger.warn('Allowing certificate error in development mode', {
@@ -101,3 +108,4 @@ const handleCertificateError = (event, webContents, url, error, certificate, cal
         callback(false);
     }
 };
+

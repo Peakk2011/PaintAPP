@@ -5,15 +5,29 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { app, nativeTheme } from 'electron';
+import { app, nativeTheme, BrowserWindowConstructorOptions } from 'electron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
+ * Command line switch configuration
+ */
+interface CommandLineSwitch {
+    switch: string;
+    value?: string;
+}
+
+/**
  * Application configuration
  */
-export const appConfig = {
+export interface AppConfig {
+    name: string;
+    appId: string;
+    commandLineSwitches: CommandLineSwitch[];
+}
+
+export const appConfig: AppConfig = {
     name: 'PaintAPP',
     appId: 'com.mintteams.paintapp',
 
@@ -29,7 +43,18 @@ export const appConfig = {
 /**
  * Window size configuration
  */
-export const windowConfig = {
+export interface WindowConfig {
+    default: {
+        width: number;
+        height: number;
+    };
+    min: {
+        width: number;
+        height: number;
+    };
+}
+
+export const windowConfig: WindowConfig = {
     default: {
         width: 480,
         height: 600
@@ -44,15 +69,15 @@ export const windowConfig = {
  * Platform utilities
  */
 export const platform = {
-    isMac: () => process.platform === 'darwin',
-    isWindows: () => process.platform === 'win32',
-    isLinux: () => process.platform === 'linux',
+    isMac: (): boolean => process.platform === 'darwin',
+    isWindows: (): boolean => process.platform === 'win32',
+    isLinux: (): boolean => process.platform === 'linux',
 
     /**
      * Get platform-specific window options
-     * @returns {Object} Platform-specific window options
+     * @returns Platform-specific window options
      */
-    getWindowOptions: () => {
+    getWindowOptions: (): Partial<BrowserWindowConstructorOptions> => {
         if (process.platform === 'win32') {
             return {
                 titleBarStyle: 'hidden', // Stable
@@ -77,12 +102,17 @@ export const platform = {
 
 /**
  * Get icon file path based on platform
- * @returns {string} Icon file path
+ * @returns Icon file path
  */
-export const getIconPath = () => {
+export const getIconPath = (): string => {
+    // In development, __dirname is dist/main_process, so go up to project root
+    // In production, use app.getAppPath()
+    const basePath = app.isPackaged 
+        ? app.getAppPath()
+        : path.join(__dirname, '..', '..');
+    
     return path.join(
-        __dirname,
-        '..',
+        basePath,
         'assets',
         'icon',
         platform.isMac() ? 'paintAPP.icns' : 'paintAPP.ico'
@@ -92,7 +122,7 @@ export const getIconPath = () => {
 /**
  * Apply command line switches for performance optimization
  */
-export const applyCommandLineSwitches = () => {
+export const applyCommandLineSwitches = (): void => {
     appConfig.commandLineSwitches.forEach(config => {
         if (config.value) {
             app.commandLine.appendSwitch(config.switch, config.value);
@@ -101,3 +131,4 @@ export const applyCommandLineSwitches = () => {
         }
     });
 };
+

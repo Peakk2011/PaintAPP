@@ -3,13 +3,14 @@
   "productName": "PaintAPP",
   "version": "1.1.0",
   "description": "PaintAPP Made By Mint Teams",
-  "main": "src/main.js",
+  "main": "dist/main.js",
   "type": "module",
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "build": "tsc",
+    "start": "npm run build && electron-forge start",
+    "package": "npm run build && electron-forge package",
+    "make": "npm run build && electron-forge make",
+    "publish": "npm run build && electron-forge publish",
     "lint": "echo \"No linting configured\"",
     "rebuild": "rm -rf node_modules package-lock.json && npm install"
   },
@@ -33,7 +34,9 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.9.0",
     "@electron-forge/plugin-fuses": "^7.9.0",
     "@electron/fuses": "^1.8.0",
-    "electron": "38.1.0"
+    "@types/node": "^20.0.0",
+    "electron": "38.1.0",
+    "typescript": "^5.0.0"
   },
   "config": {
     "forge": {

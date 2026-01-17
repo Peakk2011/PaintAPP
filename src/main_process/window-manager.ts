@@ -3,7 +3,7 @@
  * @author Peakk2011 <peakk3984@gmail.com>
  */
 
-import { BrowserWindow, Menu, app } from 'electron';
+import { BrowserWindow, Menu, app, WebPreferences, nativeTheme } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { logger } from './logger.js';
@@ -15,16 +15,28 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Main application window instance
- * @type {BrowserWindow|null}
+ * Get the source directory path
+ * Development: points to src/
+ * Production: points to the app's resources directory
  */
-let mainWindow = null;
+const getSourcePath = (): string => {
+    if (app.isPackaged) {
+        return path.join(process.resourcesPath, 'app', 'src');
+    } else {
+        return path.join(__dirname, '..', '..', 'src');
+    }
+};
+
+/**
+ * Main application window instance
+ */
+let mainWindow: BrowserWindow | null = null;
 
 /**
  * WebPreferences configuration for the window
  */
-const webPreferences = {
-    preload: path.join(__dirname, '..', 'preload.js'),
+const webPreferences: WebPreferences = {
+    preload: path.join(getSourcePath(), 'preload.js'),
     contextIsolation: true,
     nodeIntegration: false,
     sandbox: false,
@@ -39,18 +51,17 @@ const webPreferences = {
     v8CacheOptions: 'code',
     offscreen: false,
     
-    // Disable unnecessary features
+    // Unnecessary features
     plugins: false,
-    java: false,
     enableWebSQL: false,
     spellcheck: false
 };
 
 /**
  * Create the main application window
- * @returns {Promise<BrowserWindow>} Created window instance
+ * @returns Created window instance
  */
-export const createMainWindow = async () => {
+export const createMainWindow = async (): Promise<BrowserWindow> => {
     logger.info('Creating main application window');
     
     const startTime = Date.now();
@@ -69,7 +80,7 @@ export const createMainWindow = async () => {
     mainWindow = new BrowserWindow({
         ...windowBounds,
         show: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
         ...platform.getWindowOptions(),
         icon: getIconPath(),
         title: 'PaintAPP',
@@ -77,6 +88,7 @@ export const createMainWindow = async () => {
     });
     
     const creationTime = Date.now() - startTime;
+    
     logger.info('Main window created', {
         durationMs: creationTime,
         bounds: windowBounds
@@ -89,7 +101,7 @@ export const createMainWindow = async () => {
     setupApplicationMenu();
     
     // Load the HTML file
-    const indexPath = path.join(__dirname, '..', 'index.html');
+    const indexPath = path.join(getSourcePath(), 'index.html');
     await mainWindow.loadFile(indexPath);
     
     logger.info('Main window loaded', {
@@ -102,10 +114,9 @@ export const createMainWindow = async () => {
 
 /**
  * Set up window event handlers
- * @param {BrowserWindow} window - Window instance
+ * @param window - Window instance
  */
-const setupWindowEventHandlers = (window) => {
-    // Save window bounds on resize/move
+const setupWindowEventHandlers = (window: BrowserWindow): void => {
     saveWindowBounds(window);
     
     // DOM ready event
@@ -135,9 +146,10 @@ const setupWindowEventHandlers = (window) => {
 /**
  * Set up application menu
  */
-const setupApplicationMenu = () => {
+const setupApplicationMenu = (): void => {
     if (platform.isMac()) {
-        const menuTemplate = createMacMenu(createMainWindow, windowConfig);
+        const defaultWindowSize = { width: windowConfig.default.width, height: windowConfig.default.height };
+        const menuTemplate = createMacMenu(createMainWindow, defaultWindowSize);
         const menu = Menu.buildFromTemplate(menuTemplate);
         Menu.setApplicationMenu(menu);
         logger.info('macOS application menu set');
@@ -151,14 +163,14 @@ const setupApplicationMenu = () => {
 
 /**
  * Get the main window instance
- * @returns {BrowserWindow|null} Main window instance
+ * @returns Main window instance
  */
-export const getMainWindow = () => mainWindow;
+export const getMainWindow = (): BrowserWindow | null => mainWindow;
 
 /**
  * Close the main window
  */
-export const closeMainWindow = () => {
+export const closeMainWindow = (): void => {
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.close();
     }
@@ -166,6 +178,7 @@ export const closeMainWindow = () => {
 
 /**
  * Check if main window exists
- * @returns {boolean} True if window exists
+ * @returns True if window exists
  */
-export const hasMainWindow = () => mainWindow !== null;
+export const hasMainWindow = (): boolean => mainWindow !== null;
+
