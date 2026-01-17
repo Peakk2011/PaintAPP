@@ -1,35 +1,57 @@
 import { getState, getConfig, isReady, waitForReady } from '../utils/config.js';
 
 /**
- * @typedef {Object} IroColorPicker
- * @property {Object} color                                 - Color object
- * @property {string} color.hexString                       - Hex color string
- * @property {Function} on                                  - Event listener
+ * Iro color picker interface
  */
+interface IroColorPicker {
+    color: {
+        hexString: string;
+    };
+    on: (event: string, handler: (color: { hexString: string }) => void) => void;
+    off: (event: string) => void;
+}
 
 /**
- * @typedef {Object} ColorPickerControl
- * @property {string} type                                  - Control type
- * @property {string} defaultColor                          - Default color value
+ * Color picker control interface
  */
+interface ColorPickerControl {
+    type: string;
+    defaultColor?: string;
+}
 
 /**
- * @typedef {Object} ToolbarData
- * @property {Object} toolbar                               - Toolbar configuration
- * @property {Array<ColorPickerControl>} toolbar.controls   - Toolbar controls
+ * Toolbar data interface
  */
+interface ToolbarData {
+    toolbar?: {
+        controls?: ColorPickerControl[];
+    };
+}
+
+/**
+ * iro.js global interface
+ */
+declare global {
+    interface Window {
+        iro?: {
+            ColorPicker: new (container: HTMLElement, options: unknown) => IroColorPicker;
+            ui: {
+                Box: unknown;
+                Slider: unknown;
+            };
+        };
+    }
+}
+
+const iro = window.iro;
 
 let colorPickerInitialized = false;
-let themeObserver = null;
+let themeObserver: MediaQueryList | null = null;
 
 /**
  * Sets up color picker with iro.js
- * @async
- * @param {ToolbarData} data                                - Toolbar configuration data
- * @returns {Promise<void>}
- * @throws {Error} If iro.js is not loaded or initialization fails
  */
-export const setupColorPicker = async (data) => {
+export const setupColorPicker = async (data?: ToolbarData): Promise<void> => {
     try {
         // Ensure config is ready
         if (!isReady()) {
@@ -44,7 +66,7 @@ export const setupColorPicker = async (data) => {
         }
 
         // Validate iro.js library
-        if (typeof iro === 'undefined' || !iro.ColorPicker) {
+        if (!iro || !iro.ColorPicker) {
             console.error('iro.js library not loaded');
             return;
         }
@@ -57,37 +79,39 @@ export const setupColorPicker = async (data) => {
         }
 
         // Fast lookup for default color
-        let defaultColor = null;
+        let defaultColor: string | null = null;
         for (let i = 0, len = controls.length; i < len; i++) {
             const ctrl = controls[i];
             if (ctrl.type === 'color-picker') {
-                defaultColor = ctrl.defaultColor;
+                defaultColor = ctrl.defaultColor || null;
                 break;
             }
         }
 
         if (defaultColor) {
-            state.brushColor = defaultColor;
+            (state as any).brushColor = defaultColor;
         }
 
         // Validate container exists
-        if (!state.iroPickerContainer) {
+        const container = (state as any).iroPickerContainer as HTMLElement | null;
+        if (!container) {
             console.error('Color picker container not found');
             return;
         }
 
         // Setup iro.js color picker with error handling
-        const colorConfig = config.colorPicker;
+        const colorConfig = (config as any)?.colorPicker;
         if (!colorConfig) {
             console.error('Color picker config not found');
             return;
         }
 
         // Cleanup existing picker to prevent memory leaks
-        if (state.colorPicker) {
+        const existingPicker = (state as any).colorPicker as IroColorPicker | null;
+        if (existingPicker) {
             try {
-                if (typeof state.colorPicker.off === 'function') {
-                    state.colorPicker.off('color:change');
+                if (typeof existingPicker.off === 'function') {
+                    existingPicker.off('color:change');
                 }
             } catch (e) {
                 console.warn('Failed to cleanup old color picker:', e);
@@ -95,7 +119,7 @@ export const setupColorPicker = async (data) => {
         }
 
         // Create new color picker instance
-        state.colorPicker = new iro.ColorPicker(state.iroPickerContainer, {
+        const colorPicker = new iro.ColorPicker(container, {
             width: colorConfig.WIDTH || 200,
             borderWidth: colorConfig.BORDER_WIDTH || 1,
             borderColor: colorConfig.BORDER_COLOR || '#fff',
@@ -108,9 +132,11 @@ export const setupColorPicker = async (data) => {
             ]
         });
 
+        (state as any).colorPicker = colorPicker;
+
         // Optimized color change handler with throttling
-        let colorChangeTimeout = null;
-        const handleColorChange = (color) => {
+        let colorChangeTimeout: NodeJS.Timeout | null = null;
+        const handleColorChange = (color: { hexString: string }): void => {
             if (colorChangeTimeout) {
                 return; // Skip if already scheduled
             }
@@ -119,11 +145,12 @@ export const setupColorPicker = async (data) => {
                 try {
                     const hexString = color?.hexString;
                     if (hexString) {
-                        state.brushColor = hexString;
+                        (state as any).brushColor = hexString;
 
                         // Batch DOM updates
-                        if (state.colorPickerTrigger) {
-                            state.colorPickerTrigger.style.backgroundColor = hexString;
+                        const trigger = (state as any).colorPickerTrigger as HTMLElement | null;
+                        if (trigger) {
+                            trigger.style.backgroundColor = hexString;
                         }
                     }
                 } catch (e) {
@@ -134,7 +161,7 @@ export const setupColorPicker = async (data) => {
             }, 16); // ~60fps throttle
         };
 
-        state.colorPicker.on('color:change', handleColorChange);
+        colorPicker.on('color:change', handleColorChange);
         colorPickerInitialized = true;
 
     } catch (error) {
@@ -144,16 +171,15 @@ export const setupColorPicker = async (data) => {
         // Fallback to basic color
         const state = getState();
         if (state) {
-            state.brushColor = '#000000';
+            (state as any).brushColor = '#000000';
         }
     }
 };
 
 /**
  * Adjusts color theme based on system preferences
- * @returns {void}
  */
-export const adjustTheme = () => {
+export const adjustTheme = (): void => {
     try {
         const state = getState();
         const config = getConfig();
@@ -163,7 +189,7 @@ export const adjustTheme = () => {
             return;
         }
 
-        const brushConfig = config.brush;
+        const brushConfig = (config as any)?.brush;
         if (!brushConfig) {
             console.warn('Brush config not found');
             return;
@@ -173,22 +199,26 @@ export const adjustTheme = () => {
         const defaultColorLight = brushConfig.DEFAULT_COLOR_LIGHT || '#000000';
         const defaultColorDark = brushConfig.DEFAULT_COLOR_DARK || '#FFFFFF';
 
+        const brushColor = (state as any).brushColor as string;
+
         // Fast theme switching with strict equality
-        if (isDark && state.brushColor === defaultColorLight) {
-            state.brushColor = defaultColorDark;
-        } else if (!isDark && state.brushColor === defaultColorDark) {
-            state.brushColor = defaultColorLight;
+        if (isDark && brushColor === defaultColorLight) {
+            (state as any).brushColor = defaultColorDark;
+        } else if (!isDark && brushColor === defaultColorDark) {
+            (state as any).brushColor = defaultColorLight;
         }
 
         // Batch UI updates
         requestAnimationFrame(() => {
             try {
-                if (state.colorPicker && state.colorPicker.color) {
-                    state.colorPicker.color.hexString = state.brushColor;
+                const colorPicker = (state as any).colorPicker as IroColorPicker | null;
+                if (colorPicker && colorPicker.color) {
+                    colorPicker.color.hexString = (state as any).brushColor;
                 }
 
-                if (state.colorPickerTrigger) {
-                    state.colorPickerTrigger.style.backgroundColor = state.brushColor;
+                const trigger = (state as any).colorPickerTrigger as HTMLElement | null;
+                if (trigger) {
+                    trigger.style.backgroundColor = (state as any).brushColor;
                 }
             } catch (e) {
                 console.error('Theme adjustment UI update failed:', e);
@@ -202,13 +232,16 @@ export const adjustTheme = () => {
 
 /**
  * Initializes theme observer for automatic theme switching
- * @returns {void}
  */
-export const initThemeObserver = () => {
+export const initThemeObserver = (): void => {
     try {
         // Cleanup existing observer
         if (themeObserver) {
-            themeObserver.removeListener(adjustTheme);
+            if (themeObserver.removeEventListener) {
+                themeObserver.removeEventListener('change', adjustTheme);
+            } else {
+                (themeObserver as any).removeListener(adjustTheme);
+            }
         }
 
         // Setup new observer
@@ -219,7 +252,7 @@ export const initThemeObserver = () => {
             themeObserver.addEventListener('change', adjustTheme);
         } else {
             // Fallback for older browsers
-            themeObserver.addListener(adjustTheme);
+            (themeObserver as any).addListener(adjustTheme);
         }
 
         // Initial adjustment
@@ -232,24 +265,24 @@ export const initThemeObserver = () => {
 
 /**
  * Cleans up color picker resources
- * @returns {void}
  */
-export const cleanupColorPicker = () => {
+export const cleanupColorPicker = (): void => {
     try {
         const state = getState();
 
-        if (state?.colorPicker) {
-            if (typeof state.colorPicker.off === 'function') {
-                state.colorPicker.off('color:change');
+        const colorPicker = (state as any)?.colorPicker as IroColorPicker | null;
+        if (colorPicker) {
+            if (typeof colorPicker.off === 'function') {
+                colorPicker.off('color:change');
             }
-            state.colorPicker = null;
+            (state as any).colorPicker = null;
         }
 
         if (themeObserver) {
             if (themeObserver.removeEventListener) {
                 themeObserver.removeEventListener('change', adjustTheme);
             } else {
-                themeObserver.removeListener(adjustTheme);
+                (themeObserver as any).removeListener(adjustTheme);
             }
             themeObserver = null;
         }
@@ -263,6 +296,5 @@ export const cleanupColorPicker = () => {
 
 /**
  * Checks if color picker is initialized
- * @returns {boolean} True if initialized
  */
-export const isColorPickerReady = () => colorPickerInitialized;
+export const isColorPickerReady = (): boolean => colorPickerInitialized;

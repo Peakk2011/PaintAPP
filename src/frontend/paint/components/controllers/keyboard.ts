@@ -6,9 +6,8 @@ import { zoomIn, zoomOut, resetZoom } from './zoomPan.js';
 
 /**
  * Handle keyboard shortcuts
- * @param {KeyboardEvent} e - Keyboard event
  */
-export const handleKeyboard = (e) => {
+export const handleKeyboard = (e: KeyboardEvent): void => {
     const ctrl = e.ctrlKey || e.metaKey;
     const shift = e.shiftKey;
     const code = e.code;
@@ -19,7 +18,7 @@ export const handleKeyboard = (e) => {
         return;
     }
 
-    const target = e.target;
+    const target = e.target as HTMLElement;
     if (target && (
         target.tagName === 'INPUT' || 
         target.tagName === 'TEXTAREA' || 
@@ -77,7 +76,7 @@ export const handleKeyboard = (e) => {
         return;
     }
     
-    // Clear Canvas: Ctrl/Cmd + Delete or Ctrl/Cmd + Backspace | Changed from Ctrl+C to avoid conflict with copy
+    // Clear Canvas: Ctrl/Cmd + Delete or Ctrl/Cmd + Backspace
     if (ctrl && (code === 'Delete' || code === 'Backspace')) {
         e.preventDefault();
         clearCanvas();

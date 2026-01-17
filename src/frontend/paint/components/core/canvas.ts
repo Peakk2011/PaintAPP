@@ -1,10 +1,13 @@
 import { getState, getConfig } from '../utils/config.js';
+import type { GlobalState, ActiveTab } from '../utils/config.js';
 
 /**
- * @typedef {Object} CanvasCoordinates
- * @property {number} x - X coordinate
- * @property {number} y - Y coordinate
+ * Canvas coordinates interface
  */
+export interface CanvasCoordinates {
+    x: number;
+    y: number;
+}
 
 // Constants cache
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -16,15 +19,16 @@ const LINE_JOIN_ROUND = 'round';
 
 /**
  * Sets up and configures all canvas elements for the active tab.
- * @returns {void}
  */
-export const setupCanvas = () => {
+export const setupCanvas = (): void => {
     try {
         const state = getState();
-        const activeTab = state.activeTab;
+        const activeTab = state?.activeTab;
         if (!activeTab) return;
 
-        const container = activeTab.canvasContainer;
+        const container = (activeTab as any).canvasContainer;
+        if (!container) return;
+        
         const rect = container.getBoundingClientRect();
         const dpr = state.devicePixelRatio;
 
@@ -32,18 +36,18 @@ export const setupCanvas = () => {
         const newHeight = Math.round(rect.height);
 
         // Check if resize is needed
-        if (activeTab.canvasWidth !== newWidth || activeTab.canvasHeight !== newHeight) {
-            activeTab.canvasWidth = newWidth;
-            activeTab.canvasHeight = newHeight;
+        if ((activeTab as any).canvasWidth !== newWidth || (activeTab as any).canvasHeight !== newHeight) {
+            (activeTab as any).canvasWidth = newWidth;
+            (activeTab as any).canvasHeight = newHeight;
 
             // Update all canvases in batch
-            updateCanvasSize(activeTab.canvas, newWidth, newHeight, dpr);
-            updateCanvasSize(activeTab.drawingCanvas, newWidth, newHeight, dpr);
-            updateCanvasSize(activeTab.previewCanvas, newWidth, newHeight, dpr);
+            updateCanvasSize((activeTab as any).canvas, newWidth, newHeight, dpr);
+            updateCanvasSize((activeTab as any).drawingCanvas, newWidth, newHeight, dpr);
+            updateCanvasSize((activeTab as any).previewCanvas, newWidth, newHeight, dpr);
 
             // Scale and configure contexts
-            const contexts = [activeTab.ctx, activeTab.drawingCtx, activeTab.previewCtx];
-            contexts.forEach(ctx => {
+            const contexts = [(activeTab as any).ctx, (activeTab as any).drawingCtx, (activeTab as any).previewCtx].filter(Boolean);
+            contexts.forEach((ctx: CanvasRenderingContext2D) => {
                 ctx.scale(dpr, dpr);
                 ctx.lineCap = LINE_CAP_ROUND;
                 ctx.lineJoin = LINE_JOIN_ROUND;
@@ -51,10 +55,9 @@ export const setupCanvas = () => {
         }
 
         // Initialize pan values on first setup
-        if (!activeTab.isInitialized) {
-            activeTab.pan.x = 0;
-            activeTab.pan.y = 0;
-            activeTab.isInitialized = true;
+        if (!(activeTab as any).isInitialized) {
+            (activeTab as any).pan = { x: 0, y: 0 };
+            (activeTab as any).isInitialized = true;
         }
 
         initSVG();
@@ -66,13 +69,8 @@ export const setupCanvas = () => {
 
 /**
  * Updates canvas dimensions and pixel ratio
- * @param {HTMLCanvasElement} canvas    - Canvas element to update
- * @param {number} width                - New width in CSS pixels
- * @param {number} height               - New height in CSS pixels
- * @param {number} dpr                  - Device pixel ratio
- * @returns {void}
  */
-const updateCanvasSize = (canvas, width, height, dpr) => {
+const updateCanvasSize = (canvas: HTMLCanvasElement, width: number, height: number, dpr: number): void => {
     try {
         // Set buffer size (actual pixels)
         canvas.width = width * dpr;
@@ -88,16 +86,17 @@ const updateCanvasSize = (canvas, width, height, dpr) => {
 
 /**
  * Initializes or reinitializes the SVG overlay for the active tab.
- * @returns {void}
  */
-export const initSVG = () => {
+export const initSVG = (): void => {
     try {
-        const activeTab = getState().activeTab;
+        const state = getState();
+        const activeTab = state?.activeTab;
         if (!activeTab) return;
 
         // Remove existing SVG if present
-        if (activeTab.svg && activeTab.svg.parentNode) {
-            activeTab.svg.parentNode.removeChild(activeTab.svg);
+        const existingSvg = (activeTab as any).svg;
+        if (existingSvg && existingSvg.parentNode) {
+            existingSvg.parentNode.removeChild(existingSvg);
         }
 
         // Create new SVG element
@@ -109,9 +108,12 @@ export const initSVG = () => {
         svg.appendChild(g);
 
         // Update state
-        activeTab.svg = svg;
-        activeTab.svgGroup = g;
-        activeTab.canvasContainer.appendChild(svg);
+        (activeTab as any).svg = svg;
+        (activeTab as any).svgGroup = g;
+        const container = (activeTab as any).canvasContainer;
+        if (container) {
+            container.appendChild(svg);
+        }
     } catch (err) {
         console.error('Error initializing SVG:', err);
     }
@@ -119,18 +121,20 @@ export const initSVG = () => {
 
 /**
  * Converts mouse event coordinates to canvas coordinates for the active tab.
- * @param {MouseEvent} e - Mouse event
- * @returns {CanvasCoordinates} Transformed coordinates
  */
-export const getCanvasCoords = (e) => {
+export const getCanvasCoords = (e: MouseEvent): CanvasCoordinates => {
     try {
-        const activeTab = getState().activeTab;
+        const state = getState();
+        const activeTab = state?.activeTab;
         if (!activeTab) return { x: 0, y: 0 };
 
-        const rect = activeTab.canvasContainer.getBoundingClientRect();
-        const scale = activeTab.zoom;
-        const panX = activeTab.pan.x;
-        const panY = activeTab.pan.y;
+        const container = (activeTab as any).canvasContainer;
+        if (!container) return { x: 0, y: 0 };
+
+        const rect = container.getBoundingClientRect();
+        const scale = (activeTab as any).zoom || 1;
+        const panX = ((activeTab as any).pan?.x) || 0;
+        const panY = ((activeTab as any).pan?.y) || 0;
         
         return {
             x: (e.clientX - rect.left - panX) / scale,
@@ -144,29 +148,34 @@ export const getCanvasCoords = (e) => {
 
 /**
  * Requests a full canvas redraw for the active tab, including grid and layers.
- * @returns {void}
  */
-export const requestRedraw = () => {
+export const requestRedraw = (): void => {
     try {
         const state = getState();
-        const activeTab = state.activeTab;
+        const activeTab = state?.activeTab;
         if (!activeTab) return;
 
         const config = getConfig();
-        const ctx = activeTab.ctx;
-        const canvas = activeTab.canvas;
+        const ctx = (activeTab as any).ctx;
+        const canvas = (activeTab as any).canvas;
+
+        if (!ctx || !canvas) return;
 
         ctx.save();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Draw grid if zoomed in enough
-        if (activeTab.zoom > 0.25) {
-            drawGrid(ctx, activeTab, config, activeTab.zoom);
+        const zoom = (activeTab as any).zoom || 1;
+        if (zoom > 0.25) {
+            drawGrid(ctx, activeTab, config, zoom);
         }
 
         // Draw layer canvases
-        ctx.drawImage(activeTab.drawingCanvas, 0, 0);
-        ctx.drawImage(activeTab.previewCanvas, 0, 0);
+        const drawingCanvas = (activeTab as any).drawingCanvas;
+        const previewCanvas = (activeTab as any).previewCanvas;
+        
+        if (drawingCanvas) ctx.drawImage(drawingCanvas, 0, 0);
+        if (previewCanvas) ctx.drawImage(previewCanvas, 0, 0);
         
         ctx.restore();
     } catch (err) {
@@ -176,14 +185,19 @@ export const requestRedraw = () => {
 
 /**
  * Updates the CSS transform of the canvas and SVG overlay for the active tab.
- * @returns {void}
  */
-export const updateViewTransform = () => {
+export const updateViewTransform = (): void => {
     try {
-        const activeTab = getState().activeTab;
-        if (!activeTab || !activeTab.canvas || !activeTab.svg) return;
+        const state = getState();
+        const activeTab = state?.activeTab;
+        if (!activeTab) return;
 
-        const { canvas, svg, zoom, pan } = activeTab;
+        const canvas = (activeTab as any).canvas;
+        const svg = (activeTab as any).svg;
+        if (!canvas || !svg) return;
+
+        const zoom = (activeTab as any).zoom || 1;
+        const pan = (activeTab as any).pan || { x: 0, y: 0 };
 
         const transform = `translate(${Math.round(pan.x)}px, ${Math.round(pan.y)}px) scale(${zoom})`;
         
@@ -199,19 +213,20 @@ export const updateViewTransform = () => {
 
 /**
  * Draws the grid pattern on canvas
- * @param {CanvasRenderingContext2D} ctx - Canvas context
- * @param {Object} activeTab - Active tab state
- * @param {Object} config - Configuration object
- * @param {number} scale - Current zoom scale
- * @returns {void}
  */
-const drawGrid = (ctx, activeTab, config, scale) => {
+const drawGrid = (
+    ctx: CanvasRenderingContext2D,
+    activeTab: ActiveTab,
+    config: unknown,
+    scale: number
+): void => {
     try {
-        const gridSize = config.constants.GRID_SIZE;
-        const canvasWidth = activeTab.canvasWidth;
-        const canvasHeight = activeTab.canvasHeight;
-        const panX = activeTab.pan.x;
-        const panY = activeTab.pan.y;
+        const configObj = config as { constants: { GRID_SIZE: number } };
+        const gridSize = configObj.constants.GRID_SIZE;
+        const canvasWidth = (activeTab as any).canvasWidth || 0;
+        const canvasHeight = (activeTab as any).canvasHeight || 0;
+        const panX = ((activeTab as any).pan?.x) || 0;
+        const panY = ((activeTab as any).pan?.y) || 0;
         
         const opacity = Math.min(1, (scale - 0.25) / 0.25) * 0.5;
         

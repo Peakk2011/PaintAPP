@@ -1,28 +1,189 @@
 import { fetchJSON } from '../utils/fetch.js';
 
 /**
- * A utility function to create an HTML element with specified options.
- * @param {keyof HTMLElementTagNameMap} tag - The HTML tag name for the element.
- * @param {object} [options={}] - An object of attributes and properties to set on the element.
- * @returns {HTMLElement} The created HTML element.
+ * Element options interface
  */
-const createElement = (tag, options = {}) => {
+interface ElementOptions {
+    className?: string;
+    id?: string;
+    textContent?: string;
+    title?: string;
+    href?: string;
+    type?: string;
+    min?: string | number;
+    max?: string | number;
+    value?: string | number;
+    cssText?: string;
+    draggable?: boolean;
+    ariaLabel?: string;
+    [key: string]: unknown;
+}
+
+/**
+ * Select option interface
+ */
+interface SelectOption {
+    value: string;
+    text: string;
+}
+
+/**
+ * Color picker control info interface
+ */
+interface ColorPickerControlInfo {
+    id?: string;
+    labelClass: string;
+    triggerId: string;
+    previewClass: string;
+    defaultColor: string;
+    pickerContainerId: string;
+}
+
+/**
+ * Range input control info interface
+ */
+interface RangeInputControlInfo {
+    id?: string;
+    inputId: string;
+    min: string | number;
+    max: string | number;
+    value: string | number;
+    displayId: string;
+    displayClass: string;
+    displayText: string;
+}
+
+/**
+ * Select input control info interface
+ */
+interface SelectInputControlInfo {
+    id: string;
+    title: string;
+    ariaLabel: string;
+    options: SelectOption[];
+}
+
+/**
+ * Control info interface
+ */
+interface ControlInfo {
+    type: 'color-picker' | 'range' | 'select';
+    id?: string;
+    labelClass?: string;
+    triggerId?: string;
+    previewClass?: string;
+    defaultColor?: string;
+    pickerContainerId?: string;
+    inputId?: string;
+    min?: string | number;
+    max?: string | number;
+    value?: string | number;
+    displayId?: string;
+    displayClass?: string;
+    displayText?: string;
+    title?: string;
+    ariaLabel?: string;
+    options?: SelectOption[];
+}
+
+/**
+ * Button info interface
+ */
+interface ButtonInfo {
+    id: string;
+    class?: string;
+    text: string;
+}
+
+/**
+ * Toolbar data interface
+ */
+interface ToolbarData {
+    controls: ControlInfo[];
+    buttons: ButtonInfo[];
+}
+
+/**
+ * Navigation link interface
+ */
+interface NavLink {
+    href: string;
+    text: string;
+    isCurrent?: boolean;
+}
+
+/**
+ * SVG config interface
+ */
+interface SVGConfig {
+    xmlns: string;
+    height: string;
+    viewBox: string;
+    width: string;
+    fill: string;
+    path: string;
+}
+
+/**
+ * Tool interface
+ */
+interface Tool {
+    id: string;
+    class: string;
+    title: string;
+    svg: SVGConfig;
+    span: string;
+}
+
+/**
+ * Tools data interface
+ */
+interface ToolsData {
+    hamburger: {
+        id: string;
+        class: string;
+        title: string;
+        svg: SVGConfig;
+    };
+    tools: Tool[];
+}
+
+/**
+ * Application data interface
+ */
+interface ApplicationData {
+    navLinks: NavLink[];
+    toolbar: ToolbarData;
+    color?: string;
+    brushSize?: number;
+    brushType?: string;
+}
+
+/**
+ * A utility function to create an HTML element with specified options.
+ */
+const createElement = <K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    options: ElementOptions = {}
+): HTMLElementTagNameMap[K] => {
     const element = document.createElement(tag);
 
     for (const [key, value] of Object.entries(options)) {
-        if (key === 'className') element.className = value;
-        else if (key === 'id') element.id = value;
-        else if (key === 'textContent') element.textContent = value;
-        else if (key === 'title') element.title = value;
-        else if (key === 'href') element.href = value;
-        else if (key === 'type') element.type = value;
-        else if (key === 'min') element.min = value;
-        else if (key === 'max') element.max = value;
-        else if (key === 'value') element.value = value;
-        else if (key === 'cssText') element.style.cssText = value;
-        else if (key === 'draggable') element.draggable = value;
-        else if (key === 'ariaLabel') element.setAttribute('aria-label', value);
-        else if (key in element) element[key] = value;
+        if (key === 'className') (element as HTMLElement).className = String(value);
+        else if (key === 'id') element.id = String(value);
+        else if (key === 'textContent') element.textContent = String(value);
+        else if (key === 'title') (element as HTMLElement).title = String(value);
+        else if (key === 'href') (element as HTMLAnchorElement).href = String(value);
+        else if (key === 'type') (element as HTMLInputElement).type = String(value);
+        else if (key === 'min') (element as HTMLInputElement).min = String(value);
+        else if (key === 'max') (element as HTMLInputElement).max = String(value);
+        else if (key === 'value') (element as HTMLInputElement).value = String(value);
+        else if (key === 'cssText') (element as HTMLElement).style.cssText = String(value);
+        else if (key === 'draggable') element.draggable = Boolean(value);
+        else if (key === 'ariaLabel') element.setAttribute('aria-label', String(value));
+        else if (key in element) {
+            (element as Record<string, unknown>)[key] = value;
+        }
     }
 
     return element;
@@ -30,10 +191,8 @@ const createElement = (tag, options = {}) => {
 
 /**
  * Populates a select element with options.
- * @param {HTMLSelectElement} selectElement - The select element to populate.
- * @param {Array<{value: string, text: string}>} options - An array of option objects.
  */
-const populateSelect = (selectElement, options) => {
+const populateSelect = (selectElement: HTMLSelectElement, options: SelectOption[]): void => {
     const fragment = document.createDocumentFragment();
 
     options.forEach(opt => {
@@ -50,10 +209,8 @@ const populateSelect = (selectElement, options) => {
 
 /**
  * Creates a color picker control component.
- * @param {object} controlInfo - The configuration object for the color picker.
- * @returns {HTMLDivElement} The container div for the color picker control.
  */
-const createColorPicker = (controlInfo) => {
+const createColorPicker = (controlInfo: ColorPickerControlInfo): HTMLDivElement => {
     const controlDiv = createElement('div', {
         className: 'control',
         id: controlInfo.id || ''
@@ -94,10 +251,8 @@ const createColorPicker = (controlInfo) => {
 
 /**
  * Creates a range input (slider) control component.
- * @param {object} controlInfo - The configuration object for the range input.
- * @returns {HTMLDivElement} The container div for the range input control.
  */
-const createRangeInput = (controlInfo) => {
+const createRangeInput = (controlInfo: RangeInputControlInfo): HTMLDivElement => {
     const controlDiv = createElement('div', {
         className: 'control',
         id: controlInfo.id || ''
@@ -125,10 +280,8 @@ const createRangeInput = (controlInfo) => {
 
 /**
  * Creates a select (dropdown) input control component.
- * @param {object} controlInfo - The configuration object for the select input.
- * @returns {HTMLDivElement} The container div for the select input control.
  */
-const createSelectInput = (controlInfo) => {
+const createSelectInput = (controlInfo: SelectInputControlInfo): HTMLDivElement => {
     const controlDiv = createElement('div', {
         className: 'control'
     });
@@ -147,9 +300,8 @@ const createSelectInput = (controlInfo) => {
 
 /**
  * Creates and populates the main toolbar with controls and buttons from data.
- * @param {object} toolbarData - The data object containing toolbar configuration.
  */
-const createToolbar = (toolbarData) => {
+const createToolbar = (toolbarData: ToolbarData): void => {
     const toolbarContainer = document.querySelector('.toolbar');
     if (!toolbarContainer) return;
 
@@ -157,17 +309,17 @@ const createToolbar = (toolbarData) => {
 
     // Create controls
     toolbarData.controls.forEach(controlInfo => {
-        let controlDiv;
+        let controlDiv: HTMLDivElement | undefined;
 
         switch (controlInfo.type) {
             case 'color-picker':
-                controlDiv = createColorPicker(controlInfo);
+                controlDiv = createColorPicker(controlInfo as ColorPickerControlInfo);
                 break;
             case 'range':
-                controlDiv = createRangeInput(controlInfo);
+                controlDiv = createRangeInput(controlInfo as RangeInputControlInfo);
                 break;
             case 'select':
-                controlDiv = createSelectInput(controlInfo);
+                controlDiv = createSelectInput(controlInfo as SelectInputControlInfo);
                 break;
         }
 
@@ -192,9 +344,8 @@ const createToolbar = (toolbarData) => {
 
 /**
  * Creates and populates the main navigation links.
- * @param {Array<object>} navLinks - An array of navigation link objects.
  */
-const createNavigation = (navLinks) => {
+const createNavigation = (navLinks: NavLink[]): void => {
     const navContainer = document.getElementById('MainLINKS');
     if (!navContainer) return;
 
@@ -221,10 +372,8 @@ const createNavigation = (navLinks) => {
 
 /**
  * Creates SVG element from configuration object.
- * @param {object} svgConfig - The SVG configuration object.
- * @returns {SVGElement} The created SVG element.
  */
-const createSVG = (svgConfig) => {
+const createSVG = (svgConfig: SVGConfig): SVGElement => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('xmlns', svgConfig.xmlns);
     svg.setAttribute('height', svgConfig.height);
@@ -241,9 +390,8 @@ const createSVG = (svgConfig) => {
 
 /**
  * Creates and populates the tool menu with hamburger button and tool buttons.
- * @param {object} toolsData - The data object containing tools configuration.
  */
-const createToolMenu = (toolsData) => {
+const createToolMenu = (toolsData: ToolsData): void => {
     const toolbarContainer = document.querySelector('.toolbar-container');
     if (!toolbarContainer) return;
 
@@ -253,6 +401,7 @@ const createToolMenu = (toolsData) => {
         className: toolsData.hamburger.class,
         title: toolsData.hamburger.title
     });
+    
     hamburgerBtn.appendChild(createSVG(toolsData.hamburger.svg));
     toolbarContainer.appendChild(hamburgerBtn);
 
@@ -275,8 +424,8 @@ const createToolMenu = (toolsData) => {
         const span = createElement('span', {
             textContent: tool.span
         });
-        toolBtn.appendChild(span);
 
+        toolBtn.appendChild(span);
         toolMenu.appendChild(toolBtn);
     });
 
@@ -284,25 +433,48 @@ const createToolMenu = (toolsData) => {
 };
 
 /**
+ * Init options interface (same as paint.ts)
+ */
+interface InitOptions {
+    color?: string;
+    brushSize?: number;
+    brushType?: string;
+}
+
+/**
+ * Declare initializePaint function from window
+ */
+declare global {
+    interface Window {
+        initializePaint?: (data?: ApplicationData | InitOptions) => Promise<void>;
+        Electron?: {
+            ipcRenderer?: {
+                on: (channel: string, callback: (...args: unknown[]) => void) => void;
+                send: (channel: string, ...args: unknown[]) => void;
+            };
+            platform?: string;
+            isMac?: boolean;
+            isWindows?: boolean;
+        };
+    }
+}
+
+/**
  * Asynchronously fetches application data from data.json,
  * then initializes the UI components like navigation and toolbar.
  */
-const initApplication = async () => {
+const initApplication = async (): Promise<void> => {
     try {
         const data = await fetchJSON('frontend/data/content/data.json', {
             cache: true,
             retry: 2
-        });
+        }) as ApplicationData;
 
         // Load tools data
         const toolsData = await fetchJSON('frontend/data/content/toolbar.json', {
             cache: true,
             retry: 2
-        });
-
-        // Set page metadata
-        // document.title = data.pageTitle;
-        // document.getElementById('headerTitle').textContent = data.headerTitle;
+        }) as ToolsData;
 
         // Create navigation
         createNavigation(data.navLinks);
@@ -314,8 +486,8 @@ const initApplication = async () => {
         createToolMenu(toolsData);
 
         // Initialize paint application if function exists from `../paint/paint.js`
-        if (typeof initializePaint === 'function') {
-            initializePaint(data);
+        if (typeof window.initializePaint === 'function') {
+            window.initializePaint(data);
         }
 
     } catch (error) {

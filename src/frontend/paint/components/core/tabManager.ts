@@ -3,16 +3,44 @@ import { setupCanvas, requestRedraw, initSVG } from './canvas.js';
 import { saveToHistory, loadProject } from './history.js';
 import { setupCanvasListeners, cleanupCanvasListeners } from '../controllers/events.js';
 
+/**
+ * Tab state interface
+ */
+interface TabState {
+    id: string;
+    name: string;
+    canvas: HTMLCanvasElement;
+    ctx: CanvasRenderingContext2D;
+    canvasContainer: HTMLDivElement;
+    drawingCanvas: HTMLCanvasElement;
+    drawingCtx: CanvasRenderingContext2D;
+    previewCanvas: HTMLCanvasElement;
+    previewCtx: CanvasRenderingContext2D;
+    historyStack: unknown[];
+    historyIndex: number;
+    zoom: number;
+    pan: { x: number; y: number };
+    svg: SVGSVGElement | null;
+    svgGroup: SVGGElement | null;
+    stickyNotes: unknown[];
+    points: unknown[];
+    isDrawing: boolean;
+    isDraggingSticky: boolean;
+    isInitialized: boolean;
+    canvasWidth: number;
+    canvasHeight: number;
+    _cleanupListeners?: () => void;
+}
+
 let tabCounter = 0;
-const tabs = [];
-let newlyCreatedTabId = null;
-let activeTabId = null;
+const tabs: TabState[] = [];
+let newlyCreatedTabId: string | null = null;
+let activeTabId: string | null = null;
 
 /**
  * Creates a new tab state object with all necessary properties
- * @returns {object} A new tab object
  */
-const createTabState = () => {
+const createTabState = (): TabState | null => {
     tabCounter++;
     const tabId = `tab-${tabCounter}`;
 
@@ -35,15 +63,20 @@ const createTabState = () => {
     // Create drawing and preview canvases
     const drawingCanvas = document.createElement('canvas');
     const drawingCtx = drawingCanvas.getContext('2d', { willReadFrequently: true });
+    if (!drawingCtx) return null;
     
     const previewCanvas = document.createElement('canvas');
     const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+    if (!previewCtx) return null;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
 
     return {
         id: tabId,
         name: 'New tab', 
         canvas: canvas,
-        ctx: canvas.getContext('2d', { willReadFrequently: true }),
+        ctx: ctx,
         canvasContainer: canvasContainer,
         drawingCanvas: drawingCanvas,
         drawingCtx: drawingCtx,
@@ -68,7 +101,7 @@ const createTabState = () => {
 /**
  * Adjusts tab widths based on available space
  */
-const adjustTabWidths = () => {
+const adjustTabWidths = (): void => {
     const tabsContainer = document.getElementById('tabs-container');
     const newTabBtn = document.getElementById('new-tab-btn');
     const tabBar = document.getElementById('tab-bar');
@@ -93,7 +126,7 @@ const adjustTabWidths = () => {
     const minWidth = 80;
     const maxWidth = 180;
     
-    let finalWidth;
+    let finalWidth: number;
     
     if (idealWidth >= maxWidth) {
         finalWidth = maxWidth;
@@ -104,15 +137,15 @@ const adjustTabWidths = () => {
     }
 
     tabElements.forEach(tab => {
-        tab.style.flexBasis = `${finalWidth}px`;
-        tab.style.width = `${finalWidth}px`;
+        (tab as HTMLElement).style.flexBasis = `${finalWidth}px`;
+        (tab as HTMLElement).style.width = `${finalWidth}px`;
     });
 };
 
 /**
  * Renders the tab bar based on the current tabs array
  */
-const renderTabs = () => {
+const renderTabs = (): void => {
     const tabsContainer = document.getElementById('tabs-container');
     const tabBar = document.getElementById('tab-bar');
     const canvasArea = document.getElementById('canvas-area');
@@ -183,10 +216,8 @@ const renderTabs = () => {
 
 /**
  * Starts renaming a tab
- * @param {object} tab                  - Tab to rename
- * @param {HTMLElement} tabNameElement  - Tab name span element
  */
-const startRenaming = (tab, tabNameElement) => {
+const startRenaming = (tab: TabState, tabNameElement: HTMLElement): void => {
     const currentName = tab.name;
     
     const input = document.createElement('input');
@@ -199,7 +230,7 @@ const startRenaming = (tab, tabNameElement) => {
     
     let isFinishing = false;
     
-    const finishRenaming = (save) => {
+    const finishRenaming = (save: boolean): void => {
         if (isFinishing) return;
         isFinishing = true;
         
@@ -232,11 +263,11 @@ const startRenaming = (tab, tabNameElement) => {
     input.focus();
     input.select();
     
-    const onBlur = () => {
+    const onBlur = (): void => {
         setTimeout(() => finishRenaming(true), 10);
     };
     
-    const onKeyDown = (e) => {
+    const onKeyDown = (e: KeyboardEvent): void => {
         if (e.key === 'Enter') {
             e.preventDefault();
             finishRenaming(true);
@@ -246,7 +277,7 @@ const startRenaming = (tab, tabNameElement) => {
         }
     };
     
-    const onClick = (e) => {
+    const onClick = (e: MouseEvent): void => {
         e.stopPropagation();
     };
     
@@ -257,13 +288,12 @@ const startRenaming = (tab, tabNameElement) => {
 
 /**
  * Syncs global state with active tab state
- * @param {object} tab - Tab to sync with
  */
-const syncGlobalStateWithTab = (tab) => {
+const syncGlobalStateWithTab = (tab: TabState): void => {
     const mainState = getState();
     if (!mainState || !tab) return;
 
-    mainState.activeTab = tab;
+    (mainState as any).activeTab = tab;
     mainState.scale = tab.zoom;
     mainState.panX = tab.pan.x;
     mainState.panY = tab.pan.y;
@@ -271,9 +301,8 @@ const syncGlobalStateWithTab = (tab) => {
 
 /**
  * Syncs tab state with global state
- * @param {object} tab - Tab to update
  */
-const syncTabWithGlobalState = (tab) => {
+const syncTabWithGlobalState = (tab: TabState): void => {
     const mainState = getState();
     if (!mainState || !tab) return;
 };
@@ -281,7 +310,7 @@ const syncTabWithGlobalState = (tab) => {
 /**
  * Creates a new tab and sets it as active
  */
-export const createNewTab = () => {
+export const createNewTab = (): void => {
     const newTab = createTabState();
     if (!newTab) return;
 
@@ -291,7 +320,9 @@ export const createNewTab = () => {
     switchTab(newTab.id);
 
     const mainState = getState();
-    mainState.activeTab = newTab;
+    if (mainState) {
+        (mainState as any).activeTab = newTab;
+    }
 
     try {
         setupCanvas();
@@ -307,12 +338,11 @@ export const createNewTab = () => {
 
 /**
  * Switches to a specific tab
- * @param {string} tabId - The ID of the tab to switch to
  */
-export const switchTab = (tabId) => {
+export const switchTab = (tabId: string): void => {
     if (activeTabId === tabId) return;
 
-    const previousTab = getActiveTab();
+    const previousTab = getActiveTab() as TabState | null;
     const newTab = tabs.find(tab => tab.id === tabId);
     
     if (!newTab) {
@@ -321,7 +351,7 @@ export const switchTab = (tabId) => {
     }
 
     if (previousTab) {
-        if (previousTab.canvasContainer && previousTab.canvasContainer._cleanupListeners) {
+        if (previousTab.canvasContainer && (previousTab.canvasContainer as any)._cleanupListeners) {
             cleanupCanvasListeners(previousTab.canvasContainer);
         }
     }
@@ -332,7 +362,7 @@ export const switchTab = (tabId) => {
 
     document.querySelectorAll('.canvas-container').forEach(container => {
         container.classList.remove('active');
-        container.style.display = 'none';
+        (container as HTMLElement).style.display = 'none';
     });
 
     if (newTab.canvasContainer) {
@@ -346,12 +376,12 @@ export const switchTab = (tabId) => {
         setupCanvas();
         setupCanvasListeners();
         
-        if (typeof window.updateViewTransform === 'function') {
-            window.updateViewTransform();
+        if (typeof (window as any).updateViewTransform === 'function') {
+            (window as any).updateViewTransform();
         } else {
             import('./canvas.js').then(m => {
-                if (m.updateViewTransform) {
-                    m.updateViewTransform();
+                if ((m as any).updateViewTransform) {
+                    (m as any).updateViewTransform();
                 }
             });
         }
@@ -364,9 +394,8 @@ export const switchTab = (tabId) => {
 
 /**
  * Closes a specific tab with proper cleanup
- * @param {string} tabId - The ID of the tab to close
  */
-export const closeTab = (tabId) => {
+export const closeTab = (tabId: string): void => {
     const tabIndex = tabs.findIndex(tab => tab.id === tabId);
     if (tabIndex === -1) return;
 
@@ -383,7 +412,7 @@ export const closeTab = (tabId) => {
     
     // Clean up sticky notes
     if (tabToClose.stickyNotes && Array.isArray(tabToClose.stickyNotes)) {
-        tabToClose.stickyNotes.forEach(note => {
+        tabToClose.stickyNotes.forEach((note: any) => {
             if (note && typeof note.remove === 'function') {
                 note.remove();
             }
@@ -404,8 +433,8 @@ export const closeTab = (tabId) => {
     // Clean up zoom/pan animation state
     try {
         import('../controllers/zoomPan.js').then(m => {
-            if (m.cleanupZoomState) {
-                m.cleanupZoomState(tabToClose.id);
+            if ((m as any).cleanupZoomState) {
+                (m as any).cleanupZoomState(tabToClose.id);
             }
         });
     } catch (error) {
@@ -419,8 +448,8 @@ export const closeTab = (tabId) => {
     // Clear localStorage for this tab
     try {
         const config = getConfig();
-        if (config && config.storage && config.storage.PROJECT_KEY) {
-            localStorage.removeItem(`${config.storage.PROJECT_KEY}-${tabToClose.id}`);
+        if (config && (config as any).storage && (config as any).storage.PROJECT_KEY) {
+            localStorage.removeItem(`${(config as any).storage.PROJECT_KEY}-${tabToClose.id}`);
         }
     } catch (error) {
         console.error('Error cleaning up localStorage:', error);
@@ -442,26 +471,22 @@ export const closeTab = (tabId) => {
 
 /**
  * Returns the currently active tab object
- * @returns {object|null} The active tab state object or null if none
  */
-export const getActiveTab = () => {
+export const getActiveTab = (): TabState | null => {
     return tabs.find(tab => tab.id === activeTabId) || null;
 };
 
 /**
  * Returns all tabs
- * @returns {Array<object>} Array of all tab objects
  */
-export const getAllTabs = () => {
+export const getAllTabs = (): TabState[] => {
     return tabs;
 };
 
 /**
  * Updates the name of a tab
- * @param {string} tabId - Tab ID
- * @param {string} newName - New name for the tab
  */
-export const renameTab = (tabId, newName) => {
+export const renameTab = (tabId: string, newName: string): void => {
     const tab = tabs.find(t => t.id === tabId);
     if (tab) {
         tab.name = newName;
@@ -472,7 +497,7 @@ export const renameTab = (tabId, newName) => {
 /**
  * Initializes the tab system
  */
-export const initializeTabs = () => {
+export const initializeTabs = (): void => {
     const newTabBtn = document.getElementById('new-tab-btn');
     const tabBar = document.getElementById('tab-bar');
     const canvasArea = document.getElementById('canvas-area');
@@ -509,7 +534,9 @@ export const initializeTabs = () => {
         switchTab(firstTab.id);
         
         const mainState = getState();
-        mainState.activeTab = firstTab;
+        if (mainState) {
+            (mainState as any).activeTab = firstTab;
+        }
         
         try {
             setupCanvas();
@@ -524,7 +551,7 @@ export const initializeTabs = () => {
     }
 
     // Add resize listener for responsive tabs
-    let resizeTimeout;
+    let resizeTimeout: NodeJS.Timeout;
     
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
@@ -533,7 +560,7 @@ export const initializeTabs = () => {
         }, 100);
     });
 
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
         // Ctrl/Cmd + T: New tab
         if ((e.ctrlKey || e.metaKey) && e.code === 'KeyT') {
             e.preventDefault();
@@ -561,17 +588,14 @@ export const initializeTabs = () => {
 
 /**
  * Gets tab count
- * @returns {number} Number of open tabs
  */
-export const getTabCount = () => {
+export const getTabCount = (): number => {
     return tabs.length;
 };
 
 /**
  * Finds a tab by ID
- * @param {string} tabId - Tab ID to find
- * @returns {object|null} Tab object or null
  */
-export const findTabById = (tabId) => {
+export const findTabById = (tabId: string): TabState | null => {
     return tabs.find(tab => tab.id === tabId) || null;
 };

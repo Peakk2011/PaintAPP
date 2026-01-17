@@ -6,12 +6,24 @@ import { handleKeyboard } from './keyboard.js';
 import { clearCanvas, saveImage } from './files.js';
 import { adjustTheme } from '../core/tools.js';
 
-let globalListenersInitialized = false;
+let globalListenersInitialized: boolean = false;
+
+/**
+ * Mouse event simulation for touch events
+ */
+interface SimulatedMouseEvent {
+    clientX: number;
+    clientY: number;
+    button?: number;
+    target?: EventTarget | null;
+    preventDefault?: () => void;
+    stopPropagation?: () => void;
+}
 
 /**
  * Updates the cursor for the active canvas based on the current tool and size.
  */
-export const updateCursor = () => {
+export const updateCursor = (): void => {
     const state = getState();
     const activeTab = getActiveTab();
     
@@ -19,12 +31,12 @@ export const updateCursor = () => {
         return;
     }
 
-    const tool = state.currentTool;
-    const size = state.sizePicker ? state.sizePicker.value : 10;
-    const container = activeTab.canvasContainer;
+    const tool: string = (state as any).currentTool;
+    const size: number = (state as any).sizePicker ? parseFloat((state as any).sizePicker.value) : 10;
+    const container: HTMLElement = activeTab.canvasContainer;
 
     if (tool === 'eraser') {
-        const svg = `
+        const svg: string = `
             <svg
                 width="${size}"
                 height="${size}"
@@ -41,14 +53,14 @@ export const updateCursor = () => {
                 />
             </svg>
         `;
-        const hotspot = size / 2;
+        const hotspot: number = size / 2;
         container.style.cursor = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${hotspot} ${hotspot}, auto`;
     } else {
         container.style.cursor = 'crosshair';
     }
 };
 
-export const setupEventListeners = () => {
+export const setupEventListeners = (): void => {
     const state = getState();
     if (!state) {
         console.error('State not initialized');
@@ -65,18 +77,17 @@ export const setupEventListeners = () => {
 
 /**
  * Setup global event listeners that don't depend on specific canvas
- * @param {Object} state - Global state object
  */
-const setupGlobalListeners = (state) => {
+const setupGlobalListeners = (state: any): void => {
     // Manage active tool state
-    const setActiveTool = (tool) => {
+    const setActiveTool = (tool: string): void => {
         state.currentTool = tool;
-        const toolButtons = [
+        const toolButtons: Array<{ btn: HTMLElement | null; name: string }> = [
             { btn: state.brushBtn, name: 'brush' },
             { btn: state.eraserBtn, name: 'eraser' },
             { btn: state.lineBtn, name: 'line' },
         ];
-        toolButtons.forEach(item => {
+        toolButtons.forEach((item): void => {
             if (item.btn) {
                 if (item.name === tool) {
                     item.btn.classList.add('active');
@@ -91,10 +102,10 @@ const setupGlobalListeners = (state) => {
 
     // Color picker toggle
     if (state.colorPickerTrigger) {
-        state.colorPickerTrigger.addEventListener('click', (e) => {
+        state.colorPickerTrigger.addEventListener('click', (e: Event): void => {
             e.stopPropagation();
             if (state.iroPickerContainer) {
-                const isVisible = state.iroPickerContainer.style.display === 'flex';
+                const isVisible: boolean = state.iroPickerContainer.style.display === 'flex';
                 state.iroPickerContainer.style.display = isVisible ? 'none' : 'flex';
             }
         });
@@ -102,10 +113,10 @@ const setupGlobalListeners = (state) => {
 
     // Hamburger menu toggle
     if (state.hamburgerBtn) {
-        state.hamburgerBtn.addEventListener('click', (e) => {
+        state.hamburgerBtn.addEventListener('click', (e: Event): void => {
             e.stopPropagation();
             if (state.toolMenu) {
-                const isHidden = state.toolMenu.classList.contains('hidden');
+                const isHidden: boolean = state.toolMenu.classList.contains('hidden');
                 if (isHidden) {
                     state.toolMenu.classList.remove('hidden');
                     state.toolMenu.classList.add('pop-up');
@@ -118,19 +129,22 @@ const setupGlobalListeners = (state) => {
     }
 
     // Close pop-ups when clicking outside
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', (e: Event): void => {
+        const target = e.target as HTMLElement;
+        
         // Color picker
         if (state.iroPickerContainer && 
-            !state.iroPickerContainer.contains(e.target) &&
-            e.target !== state.colorPickerTrigger) {
+            !state.iroPickerContainer.contains(target) &&
+            target !== state.colorPickerTrigger) {
             state.iroPickerContainer.style.display = 'none';
         }
         
         // Tool menu
         if (state.toolMenu &&
-            !state.toolMenu.contains(e.target) &&
-            e.target !== state.hamburgerBtn &&
-            !state.hamburgerBtn.contains(e.target)) {
+            !state.toolMenu.contains(target) &&
+            target !== state.hamburgerBtn &&
+            state.hamburgerBtn &&
+            !state.hamburgerBtn.contains(target)) {
             state.toolMenu.classList.add('hidden');
             state.toolMenu.classList.remove('pop-up');
         }
@@ -138,13 +152,13 @@ const setupGlobalListeners = (state) => {
 
     // Tool buttons
     if (state.brushBtn) {
-        state.brushBtn.addEventListener('click', () => setActiveTool('brush'));
+        state.brushBtn.addEventListener('click', (): void => setActiveTool('brush'));
     }
     if (state.eraserBtn) {
-        state.eraserBtn.addEventListener('click', () => setActiveTool('eraser'));
+        state.eraserBtn.addEventListener('click', (): void => setActiveTool('eraser'));
     }
     if (state.lineBtn) {
-        state.lineBtn.addEventListener('click', () => setActiveTool('line'));
+        state.lineBtn.addEventListener('click', (): void => setActiveTool('line'));
     }
 
     if (state.clearBtn) {
@@ -159,9 +173,11 @@ const setupGlobalListeners = (state) => {
 
     // Brush size display
     if (state.sizePicker && state.sizeDisplay) {
-        state.sizePicker.addEventListener('input', () => {
-            state.sizeDisplay.textContent = state.sizePicker.value + 'px';
-            updateCursor(); // Update cursor on size change
+        state.sizePicker.addEventListener('input', (): void => {
+            if (state.sizeDisplay && state.sizePicker) {
+                state.sizeDisplay.textContent = state.sizePicker.value + 'px';
+            }
+            updateCursor();
         });
     }
 
@@ -169,7 +185,7 @@ const setupGlobalListeners = (state) => {
     document.addEventListener('keydown', handleKeyboard);
 
     // Shift key state for straight lines
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', (e: KeyboardEvent): void => {
         if (e.key === 'Shift') {
             const currentState = getState();
             if (currentState) {
@@ -178,7 +194,7 @@ const setupGlobalListeners = (state) => {
         }
     });
 
-    document.addEventListener('keyup', (e) => {
+    document.addEventListener('keyup', (e: KeyboardEvent): void => {
         if (e.key === 'Shift') {
             const currentState = getState();
             if (currentState) {
@@ -188,7 +204,7 @@ const setupGlobalListeners = (state) => {
     });
 
     // Reset shift state if window loses focus
-    window.addEventListener('blur', () => {
+    window.addEventListener('blur', (): void => {
         const currentState = getState();
         if (currentState) {
             currentState.isShiftDown = false;
@@ -196,12 +212,12 @@ const setupGlobalListeners = (state) => {
     });
 
     // Window resize with debounce
-    let resizeTimer;
-    window.addEventListener('resize', () => {
+    let resizeTimer: number;
+    window.addEventListener('resize', (): void => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            if (typeof window.setupCanvas === 'function') {
-                window.setupCanvas();
+        resizeTimer = window.setTimeout((): void => {
+            if (typeof (window as any).setupCanvas === 'function') {
+                (window as any).setupCanvas();
             }
         }, 250);
     });
@@ -212,17 +228,24 @@ const setupGlobalListeners = (state) => {
 };
 
 /**
+ * Extended HTMLElement with custom properties
+ */
+interface ExtendedHTMLElement extends HTMLElement {
+    _cleanupListeners?: () => void;
+}
+
+/**
  * Setup canvas-specific event listeners for the active tab
  * This function can be called when switching tabs
  */
-export const setupCanvasListeners = () => {
+export const setupCanvasListeners = (): void => {
     const activeTab = getActiveTab();
     if (!activeTab || !activeTab.canvasContainer) {
         console.warn('No active tab or canvas container available');
         return;
     }
 
-    const container = activeTab.canvasContainer;
+    const container: ExtendedHTMLElement = activeTab.canvasContainer as ExtendedHTMLElement;
     const state = getState();
 
     // Update cursor for the new active tab
@@ -233,52 +256,58 @@ export const setupCanvasListeners = () => {
     }
 
     // Mouse events for drawing
-    const mouseDownHandler = (e) => startDrawing(e);
+    const mouseDownHandler = (e: MouseEvent): void => {
+        startDrawing(e);
+    };
     
-    const mouseMoveHandler = (e) => draw(e);
+    const mouseMoveHandler = (e: MouseEvent): void => {
+        draw(e);
+    };
     
     container.addEventListener('mousedown', mouseDownHandler);
     container.addEventListener('mousemove', mouseMoveHandler);
     
     // Global mouseup to catch releases outside canvas
-    const mouseUpHandler = (e) => {
+    const mouseUpHandler = (e: MouseEvent): void => {
         if (e.button !== 2) { // Not right-click
             stopDrawing();
         }
     };
     document.addEventListener('mouseup', mouseUpHandler);
     
-    const mouseLeaveHandler = () => stopDrawing();
+    const mouseLeaveHandler = (): void => stopDrawing();
     document.addEventListener('mouseleave', mouseLeaveHandler);
 
     // Wheel for zoom/pan
-    const wheelHandler = (e) => handleWheel(e);
+    const wheelHandler = (e: WheelEvent): void => handleWheel(e);
     container.addEventListener('wheel', wheelHandler, { passive: false });
 
     // Touch events
-    const touchStartHandler = (e) => handleTouch(e);
-    const touchMoveHandler = (e) => handleTouchMove(e);
-    const touchEndHandler = () => stopDrawing();
+    const touchStartHandler = (e: TouchEvent): void => handleTouch(e);
+    const touchMoveHandler = (e: TouchEvent): void => handleTouchMove(e);
+    const touchEndHandler = (): void => stopDrawing();
     
     container.addEventListener('touchstart', touchStartHandler, { passive: false });
     container.addEventListener('touchmove', touchMoveHandler, { passive: false });
     container.addEventListener('touchend', touchEndHandler);
 
     // Context menu
-    const contextMenuHandler = (e) => {
+    const contextMenuHandler = (e: MouseEvent): void => {
         e.preventDefault();
-        if (window.Electron && window.Electron.ipcRenderer) {
-            const currentBrush = state.brushType ? state.brushType.value : 'smooth';
-            window.Electron.ipcRenderer.send('show-context-menu', currentBrush);
+        if ((window as any).Electron && (window as any).Electron.ipcRenderer) {
+            const currentBrush: string = (state as any)?.brushType ? (state as any).brushType.value : 'smooth';
+            (window as any).Electron.ipcRenderer.send('show-context-menu', currentBrush);
         }
     };
     container.addEventListener('contextmenu', contextMenuHandler);
 
     // Track mouse position for the active canvas
-    const mouseMoveTrackerHandler = (e) => {
-        const rect = container.getBoundingClientRect();
-        state.lastMouseX = e.clientX - rect.left;
-        state.lastMouseY = e.clientY - rect.top;
+    const mouseMoveTrackerHandler = (e: MouseEvent): void => {
+        const rect: DOMRect = container.getBoundingClientRect();
+        if (state) {
+            (state as any).lastMouseX = e.clientX - rect.left;
+            (state as any).lastMouseY = e.clientY - rect.top;
+        }
     };
     container.addEventListener('mousemove', mouseMoveTrackerHandler);
 
@@ -286,7 +315,7 @@ export const setupCanvasListeners = () => {
     container.dataset.listenersSetup = 'true';
     
     // Store cleanup function on the container for later removal
-    container._cleanupListeners = () => {
+    container._cleanupListeners = (): void => {
         container.removeEventListener('mousedown', mouseDownHandler);
         container.removeEventListener('mousemove', mouseMoveHandler);
         container.removeEventListener('mousemove', mouseMoveTrackerHandler);
@@ -303,50 +332,49 @@ export const setupCanvasListeners = () => {
 
 /**
  * Handle touch start event
- * @param {TouchEvent} e - Touch event
  */
-const handleTouch = (e) => {
+const handleTouch = (e: TouchEvent): void => {
     e.preventDefault();
-    const touch = e.touches[0];
-    const mouseEvent = {
+    const touch: Touch = e.touches[0];
+    const mouseEvent: SimulatedMouseEvent = {
         clientX: touch.clientX,
         clientY: touch.clientY,
         button: 0,
         target: e.target,
-        preventDefault: () => { },
-        stopPropagation: () => { }
+        preventDefault: (): void => {},
+        stopPropagation: (): void => {}
     };
-    startDrawing(mouseEvent);
+    startDrawing(mouseEvent as any);
 };
 
 /**
  * Handle touch move event
- * @param {TouchEvent} e - Touch event
  */
-const handleTouchMove = (e) => {
+const handleTouchMove = (e: TouchEvent): void => {
     e.preventDefault();
-    const touch = e.touches[0];
-    const mouseEvent = {
+    const touch: Touch = e.touches[0];
+    const mouseEvent: SimulatedMouseEvent = {
         clientX: touch.clientX,
         clientY: touch.clientY
     };
-    draw(mouseEvent);
+    draw(mouseEvent as any);
 };
 
 /**
  * Cleanup event listeners for a specific canvas container
  * Useful when closing tabs
- * @param {HTMLElement} container - Canvas container element
  */
-export const cleanupCanvasListeners = (container) => {
+export const cleanupCanvasListeners = (container: HTMLElement | null): void => {
     if (!container) return;
     
+    const extendedContainer = container as ExtendedHTMLElement;
+    
     // Call stored cleanup function if it exists
-    if (typeof container._cleanupListeners === 'function') {
-        container._cleanupListeners();
-        delete container._cleanupListeners;
+    if (typeof extendedContainer._cleanupListeners === 'function') {
+        extendedContainer._cleanupListeners();
+        delete extendedContainer._cleanupListeners;
     }
     
     // Mark as not setup so it can be re-initialized
-    delete container.dataset.listenersSetup;
+    delete extendedContainer.dataset.listenersSetup;
 };

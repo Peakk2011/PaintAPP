@@ -3,24 +3,34 @@ import { getActiveTab } from '../core/tabManager.js';
 import { updateViewTransform } from '../core/canvas.js';
 
 /**
- * @fileoverview Zoom and pan interaction module with smooth animations
- * @module zoomPan
- * 
- * @typedef {Object} ZoomState
- * @property {number} targetScale - Target zoom scale
- * @property {number} currentScale - Current animated scale
- * @property {number} targetPanX - Target pan X position
- * @property {number} targetPanY - Target pan Y position
- * @property {number} currentPanX - Current animated pan X
- * @property {number} currentPanY - Current animated pan Y
- * @property {number|null} animationFrame - Animation frame ID
- * @property {boolean} isAnimating - Animation state flag
- * @property {string|null} tabId - ID of tab being animated
+ * Zoom state interface
  */
+interface ZoomState {
+    targetScale: number;
+    currentScale: number;
+    targetPanX: number;
+    targetPanY: number;
+    currentPanX: number;
+    currentPanY: number;
+    animationFrame: number | null;
+    isAnimating: boolean;
+    tabId: string | null;
+}
+
+/**
+ * Active tab interface for zoom operations
+ */
+interface ZoomableTab {
+    id: string;
+    zoom: number;
+    pan: { x: number; y: number };
+    canvasContainer: HTMLElement;
+    canvasWidth: number;
+    canvasHeight: number;
+}
 
 // Animation state per tab
-/** @type {Map<string, ZoomState>} */
-const zoomStates = new Map();
+const zoomStates = new Map<string, ZoomState>();
 
 // Constants
 const ANIMATION_EASING = 0.15; 
@@ -29,10 +39,9 @@ const HALF = 0.5;
 
 /**
  * Gets or creates zoom state for active tab
- * @returns {ZoomState|null} Zoom state or null if no active tab
  */
-const getZoomState = () => {
-    const activeTab = getActiveTab();
+const getZoomState = (): ZoomState | null => {
+    const activeTab = getActiveTab() as unknown as ZoomableTab;
     if (!activeTab) return null;
 
     if (!zoomStates.has(activeTab.id)) {
@@ -49,14 +58,13 @@ const getZoomState = () => {
         });
     }
 
-    return zoomStates.get(activeTab.id);
+    return zoomStates.get(activeTab.id) || null;
 };
 
 /**
  * Cleans up zoom state for a closed tab
- * @param {string} tabId - Tab ID to clean up
  */
-export const cleanupZoomState = (tabId) => {
+export const cleanupZoomState = (tabId: string): void => {
     const state = zoomStates.get(tabId);
     if (state && state.animationFrame) {
         cancelAnimationFrame(state.animationFrame);
@@ -66,33 +74,34 @@ export const cleanupZoomState = (tabId) => {
 
 /**
  * Handles mouse wheel events for zoom and pan
- * @param {WheelEvent} e - Wheel event
- * @returns {void}
  */
-export const handleWheel = (e) => {
+export const handleWheel = (e: WheelEvent): void => {
     try {
         e.preventDefault();
 
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
-        const config = getConfig().constants;
+        const config = getConfig();
+        const constants = (config as any)?.constants;
+        if (!constants) return;
+
         const rect = activeTab.canvasContainer.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
         if (e.ctrlKey || e.metaKey) {
             // Zoom operation
-            const delta = 1 - e.deltaY * config.ZOOM_SENSITIVITY;
+            const delta = 1 - e.deltaY * constants.ZOOM_SENSITIVITY;
             const currentZoom = activeTab.zoom || 1;
             const newScale = Math.max(
-                config.MIN_SCALE,
-                Math.min(config.MAX_SCALE, currentZoom * delta)
+                constants.MIN_SCALE,
+                Math.min(constants.MAX_SCALE, currentZoom * delta)
             );
 
             if (newScale !== currentZoom) {
-                const currentPanX = activeTab.pan.x || 0;
-                const currentPanY = activeTab.pan.y || 0;
+                const currentPanX = activeTab.pan?.x || 0;
+                const currentPanY = activeTab.pan?.y || 0;
                 
                 // Calculate the point under the mouse in canvas coordinates
                 const canvasX = (mouseX - currentPanX) / currentZoom;
@@ -106,10 +115,10 @@ export const handleWheel = (e) => {
             }
         } else {
             // Pan operation
-            const sens = config.PAN_SENSITIVITY;
-            const currentPanX = activeTab.pan.x || 0;
-            const currentPanY = activeTab.pan.y || 0;
-            let newPanX, newPanY;
+            const sens = constants.PAN_SENSITIVITY;
+            const currentPanX = activeTab.pan?.x || 0;
+            const currentPanY = activeTab.pan?.y || 0;
+            let newPanX: number, newPanY: number;
 
             if (e.shiftKey) {
                 // Shift + Wheel scrolls horizontally
@@ -130,15 +139,10 @@ export const handleWheel = (e) => {
 
 /**
  * Animates zoom to target scale and position
- * @param {number} targetScale - Target zoom scale
- * @param {number} targetPanX - Target pan X position
- * @param {number} targetPanY - Target pan Y position
- * @param {DOMRect} rect - Container bounding rect
- * @returns {void}
  */
-const animateZoom = (targetScale, targetPanX, targetPanY, rect) => {
+const animateZoom = (targetScale: number, targetPanX: number, targetPanY: number, rect: DOMRect): void => {
     try {
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
         const zoomState = getZoomState();
@@ -148,8 +152,8 @@ const animateZoom = (targetScale, targetPanX, targetPanY, rect) => {
         zoomState.targetPanX = targetPanX;
         zoomState.targetPanY = targetPanY;
         zoomState.currentScale = activeTab.zoom || 1;
-        zoomState.currentPanX = activeTab.pan.x || 0;
-        zoomState.currentPanY = activeTab.pan.y || 0;
+        zoomState.currentPanX = activeTab.pan?.x || 0;
+        zoomState.currentPanY = activeTab.pan?.y || 0;
 
         if (!zoomState.isAnimating) {
             zoomState.isAnimating = true;
@@ -162,14 +166,10 @@ const animateZoom = (targetScale, targetPanX, targetPanY, rect) => {
 
 /**
  * Animates pan to target position
- * @param {number} targetPanX - Target pan X position
- * @param {number} targetPanY - Target pan Y position
- * @param {DOMRect} rect - Container bounding rect
- * @returns {void}
  */
-const animatePan = (targetPanX, targetPanY, rect) => {
+const animatePan = (targetPanX: number, targetPanY: number, rect: DOMRect): void => {
     try {
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
         const zoomState = getZoomState();
@@ -179,8 +179,8 @@ const animatePan = (targetPanX, targetPanY, rect) => {
         zoomState.targetPanX = targetPanX;
         zoomState.targetPanY = targetPanY;
         zoomState.currentScale = activeTab.zoom || 1;
-        zoomState.currentPanX = activeTab.pan.x || 0;
-        zoomState.currentPanY = activeTab.pan.y || 0;
+        zoomState.currentPanX = activeTab.pan?.x || 0;
+        zoomState.currentPanY = activeTab.pan?.y || 0;
 
         if (!zoomState.isAnimating) {
             zoomState.isAnimating = true;
@@ -193,14 +193,12 @@ const animatePan = (targetPanX, targetPanY, rect) => {
 
 /**
  * Starts the animation loop
- * @param {DOMRect} rect - Container bounding rect
- * @returns {void}
  */
-const startAnimation = (rect) => {
+const startAnimation = (rect: DOMRect): void => {
     try {
-        const animate = () => {
+        const animate = (): void => {
             try {
-                const activeTab = getActiveTab();
+                const activeTab = getActiveTab() as unknown as ZoomableTab;
                 if (!activeTab) return;
 
                 const zoomState = getZoomState();
@@ -226,6 +224,7 @@ const startAnimation = (rect) => {
                 if (isComplete) {
                     // Snap to final values
                     activeTab.zoom = zoomState.targetScale;
+                    if (!activeTab.pan) activeTab.pan = { x: 0, y: 0 };
                     activeTab.pan.x = zoomState.targetPanX;
                     activeTab.pan.y = zoomState.targetPanY;
 
@@ -243,6 +242,7 @@ const startAnimation = (rect) => {
                 zoomState.currentPanY += panYDiff * ANIMATION_EASING;
 
                 activeTab.zoom = zoomState.currentScale;
+                if (!activeTab.pan) activeTab.pan = { x: 0, y: 0 };
                 activeTab.pan.x = zoomState.currentPanX;
                 activeTab.pan.y = zoomState.currentPanY;
 
@@ -278,12 +278,10 @@ const startAnimation = (rect) => {
 
 /**
  * Constrains pan within bounds
- * @param {DOMRect} containerRect - Container bounding rect
- * @returns {void}
  */
-const constrainPan = (containerRect) => {
+const constrainPan = (containerRect: DOMRect): void => {
     try {
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
         const scaledWidth = activeTab.canvasWidth * activeTab.zoom;
@@ -317,19 +315,21 @@ const constrainPan = (containerRect) => {
 
 /**
  * Zooms in by one step
- * @returns {void}
  */
-export const zoomIn = () => {
+export const zoomIn = (): void => {
     try {
         const state = getState();
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
-        const config = getConfig().constants;
-        const centerX = state.lastMouseX || activeTab.canvasWidth * HALF;
-        const centerY = state.lastMouseY || activeTab.canvasHeight * HALF;
+        const config = getConfig();
+        const constants = (config as any)?.constants;
+        if (!constants) return;
 
-        zoom(config.ZOOM_STEP, centerX, centerY);
+        const centerX = (state as any).lastMouseX || activeTab.canvasWidth * HALF;
+        const centerY = (state as any).lastMouseY || activeTab.canvasHeight * HALF;
+
+        zoom(constants.ZOOM_STEP, centerX, centerY);
     } catch (error) {
         console.error('Error zooming in:', error);
     }
@@ -337,19 +337,21 @@ export const zoomIn = () => {
 
 /**
  * Zooms out by one step
- * @returns {void}
  */
-export const zoomOut = () => {
+export const zoomOut = (): void => {
     try {
         const state = getState();
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
-        const config = getConfig().constants;
-        const centerX = state.lastMouseX || activeTab.canvasWidth * HALF;
-        const centerY = state.lastMouseY || activeTab.canvasHeight * HALF;
+        const config = getConfig();
+        const constants = (config as any)?.constants;
+        if (!constants) return;
 
-        zoom(1 / config.ZOOM_STEP, centerX, centerY);
+        const centerX = (state as any).lastMouseX || activeTab.canvasWidth * HALF;
+        const centerY = (state as any).lastMouseY || activeTab.canvasHeight * HALF;
+
+        zoom(1 / constants.ZOOM_STEP, centerX, centerY);
     } catch (error) {
         console.error('Error zooming out:', error);
     }
@@ -357,11 +359,10 @@ export const zoomOut = () => {
 
 /**
  * Resets zoom and pan to default values
- * @returns {void}
  */
-export const resetZoom = () => {
+export const resetZoom = (): void => {
     try {
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
         const rect = activeTab.canvasContainer.getBoundingClientRect();
@@ -378,29 +379,28 @@ export const resetZoom = () => {
 
 /**
  * Zooms by delta factor around center point
- * @param {number} delta - Zoom delta multiplier
- * @param {number} centerX - Center X coordinate
- * @param {number} centerY - Center Y coordinate
- * @returns {void}
  */
-const zoom = (delta, centerX, centerY) => {
+const zoom = (delta: number, centerX: number, centerY: number): void => {
     try {
-        const activeTab = getActiveTab();
+        const activeTab = getActiveTab() as unknown as ZoomableTab;
         if (!activeTab) return;
 
-        const config = getConfig().constants;
+        const config = getConfig();
+        const constants = (config as any)?.constants;
+        if (!constants) return;
+
         const rect = activeTab.canvasContainer.getBoundingClientRect();
 
         const currentZoom = activeTab.zoom || 1;
         const newScale = Math.max(
-            config.MIN_SCALE,
-            Math.min(config.MAX_SCALE, currentZoom * delta)
+            constants.MIN_SCALE,
+            Math.min(constants.MAX_SCALE, currentZoom * delta)
         );
 
         if (newScale === currentZoom) return;
 
-        const currentPanX = activeTab.pan.x || 0;
-        const currentPanY = activeTab.pan.y || 0;
+        const currentPanX = activeTab.pan?.x || 0;
+        const currentPanY = activeTab.pan?.y || 0;
         
         const canvasX = (centerX - currentPanX) / currentZoom;
         const canvasY = (centerY - currentPanY) / currentZoom;
@@ -416,54 +416,50 @@ const zoom = (delta, centerX, centerY) => {
 
 /**
  * Sets a specific zoom level
- * @param {number} zoomLevel - Target zoom level
- * @returns {void}
  */
-export const setZoom = (zoomLevel) => {
-    const activeTab = getActiveTab();
+export const setZoom = (zoomLevel: number): void => {
+    const activeTab = getActiveTab() as unknown as ZoomableTab;
     if (!activeTab) return;
 
-    const config = getConfig().constants;
+    const config = getConfig();
+    const constants = (config as any)?.constants;
+    if (!constants) return;
+
     const newZoom = Math.max(
-        config.MIN_SCALE,
-        Math.min(config.MAX_SCALE, zoomLevel)
+        constants.MIN_SCALE,
+        Math.min(constants.MAX_SCALE, zoomLevel)
     );
 
     const rect = activeTab.canvasContainer.getBoundingClientRect();
-    animateZoom(newZoom, activeTab.pan.x || 0, activeTab.pan.y || 0, rect);
+    animateZoom(newZoom, activeTab.pan?.x || 0, activeTab.pan?.y || 0, rect);
 };
 
 /**
  * Gets the current zoom level
- * @returns {number|null} Current zoom level or null if no active tab
  */
-export const getZoom = () => {
-    const activeTab = getActiveTab();
+export const getZoom = (): number | null => {
+    const activeTab = getActiveTab() as unknown as ZoomableTab;
     return activeTab ? (activeTab.zoom || 1) : null;
 };
 
 /**
  * Pans the canvas by a specific amount
- * @param {number} deltaX - Horizontal pan distance
- * @param {number} deltaY - Vertical pan distance
- * @returns {void}
  */
-export const pan = (deltaX, deltaY) => {
-    const activeTab = getActiveTab();
+export const pan = (deltaX: number, deltaY: number): void => {
+    const activeTab = getActiveTab() as unknown as ZoomableTab;
     if (!activeTab) return;
 
     const rect = activeTab.canvasContainer.getBoundingClientRect();
-    const currentPanX = activeTab.pan.x || 0;
-    const currentPanY = activeTab.pan.y || 0;
+    const currentPanX = activeTab.pan?.x || 0;
+    const currentPanY = activeTab.pan?.y || 0;
     animatePan(currentPanX + deltaX, currentPanY + deltaY, rect);
 };
 
 /**
  * Centers the canvas in the viewport
- * @returns {void}
  */
-export const centerCanvas = () => {
-    const activeTab = getActiveTab();
+export const centerCanvas = (): void => {
+    const activeTab = getActiveTab() as unknown as ZoomableTab;
     if (!activeTab) return;
 
     const rect = activeTab.canvasContainer.getBoundingClientRect();
@@ -479,10 +475,9 @@ export const centerCanvas = () => {
 
 /**
  * Fits the canvas to the viewport
- * @returns {void}
  */
-export const fitToView = () => {
-    const activeTab = getActiveTab();
+export const fitToView = (): void => {
+    const activeTab = getActiveTab() as unknown as ZoomableTab;
     if (!activeTab) return;
 
     const rect = activeTab.canvasContainer.getBoundingClientRect();
@@ -496,4 +491,4 @@ export const fitToView = () => {
     const targetPanY = centerY - (activeTab.canvasHeight * newZoom) * HALF;
 
     animateZoom(newZoom, targetPanX, targetPanY, rect);
-}
+};
