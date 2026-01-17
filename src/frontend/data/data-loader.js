@@ -220,12 +220,82 @@ const createNavigation = (navLinks) => {
 };
 
 /**
+ * Creates SVG element from configuration object.
+ * @param {object} svgConfig - The SVG configuration object.
+ * @returns {SVGElement} The created SVG element.
+ */
+const createSVG = (svgConfig) => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('xmlns', svgConfig.xmlns);
+    svg.setAttribute('height', svgConfig.height);
+    svg.setAttribute('viewBox', svgConfig.viewBox);
+    svg.setAttribute('width', svgConfig.width);
+    svg.setAttribute('fill', svgConfig.fill);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', svgConfig.path);
+    
+    svg.appendChild(path);
+    return svg;
+};
+
+/**
+ * Creates and populates the tool menu with hamburger button and tool buttons.
+ * @param {object} toolsData - The data object containing tools configuration.
+ */
+const createToolMenu = (toolsData) => {
+    const toolbarContainer = document.querySelector('.toolbar-container');
+    if (!toolbarContainer) return;
+
+    // Create hamburger button
+    const hamburgerBtn = createElement('button', {
+        id: toolsData.hamburger.id,
+        className: toolsData.hamburger.class,
+        title: toolsData.hamburger.title
+    });
+    hamburgerBtn.appendChild(createSVG(toolsData.hamburger.svg));
+    toolbarContainer.appendChild(hamburgerBtn);
+
+    // Create tool menu container
+    const toolMenu = createElement('div', {
+        id: 'tool-menu',
+        className: 'hidden'
+    });
+
+    // Create tool buttons
+    toolsData.tools.forEach(tool => {
+        const toolBtn = createElement('button', {
+            id: tool.id,
+            className: tool.class,
+            title: tool.title
+        });
+
+        toolBtn.appendChild(createSVG(tool.svg));
+        
+        const span = createElement('span', {
+            textContent: tool.span
+        });
+        toolBtn.appendChild(span);
+
+        toolMenu.appendChild(toolBtn);
+    });
+
+    toolbarContainer.appendChild(toolMenu);
+};
+
+/**
  * Asynchronously fetches application data from data.json,
  * then initializes the UI components like navigation and toolbar.
  */
 const initApplication = async () => {
     try {
         const data = await fetchJSON('frontend/data/content/data.json', {
+            cache: true,
+            retry: 2
+        });
+
+        // Load tools data
+        const toolsData = await fetchJSON('frontend/data/content/toolbar.json', {
             cache: true,
             retry: 2
         });
@@ -240,6 +310,9 @@ const initApplication = async () => {
         // Create toolbar
         createToolbar(data.toolbar);
 
+        // Create tool menu
+        createToolMenu(toolsData);
+
         // Initialize paint application if function exists from `../paint/paint.js`
         if (typeof initializePaint === 'function') {
             initializePaint(data);
@@ -247,11 +320,13 @@ const initApplication = async () => {
 
     } catch (error) {
         console.error('Failed to load application data:', error);
-        // Optional: Show user-friendly error message
+
+        // Display error message
         const errorDiv = createElement('div', {
             className: 'error-message',
             textContent: 'Failed to load application. Please refresh the page.'
         });
+
         document.body.prepend(errorDiv);
     }
 };

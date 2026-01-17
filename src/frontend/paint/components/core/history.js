@@ -1,5 +1,5 @@
 import { getState, getConfig } from '../utils/config.js';
-import { getActiveTab } from './tabManager.js'; 
+import { getActiveTab } from './tabManager.js';
 import { createStickyNote } from './stickyNotes.js';
 
 /**
@@ -16,12 +16,12 @@ export const saveToHistory = () => {
     try {
         const state = getState();
         const config = getConfig();
-        const activeTab = getActiveTab(); 
+        const activeTab = getActiveTab();
         if (!activeTab) return;
 
         const now = Date.now();
         const idx = activeTab.historyIndex;     // Use activeTab.historyIndex
-        const stack = activeTab.historyStack;  
+        const stack = activeTab.historyStack;
 
         // check update last entry if within debounce window
         if (idx > 0 && idx === stack.length - 1) {
@@ -43,7 +43,7 @@ export const saveToHistory = () => {
 
         // Limit history size
         const len = activeTab.historyStack.length;
-        
+
         if (len > config.constants.MAX_HISTORY) {
             activeTab.historyStack.shift();
         } else {
@@ -213,37 +213,39 @@ export const saveProject = () => {
     try {
         const state = getState();
         const config = getConfig();
-        const activeTab = getActiveTab(); // Get active tab
-        if (!activeTab) return;
+        const activeTab = getActiveTab();
+        if (!activeTab || !state) return;
 
         // Convert canvas to data URL
-        const imageDataUrl = activeTab.drawingCanvas.toDataURL(); // Use activeTab.drawingCanvas
+        const imageDataUrl = activeTab.drawingCanvas.toDataURL();
 
         // Serialize sticky notes
-        const notes = activeTab.stickyNotes; // Use activeTab.stickyNotes
-        const notesLen = notes.length;
-        const serializedNotes = new Array(notesLen);
-
-        for (let i = 0; i < notesLen; i++) {
-            const note = notes[i];
-            serializedNotes[i] = {
-                x: note.x,
-                y: note.y,
-                width: note.width,
-                height: note.height,
-                text: note.text,
-                color: note.color
-            };
-        }
+        const serializedNotes = activeTab.stickyNotes.map(note => ({
+            x: note.x,
+            y: note.y,
+            width: note.width,
+            height: note.height,
+            text: note.text,
+            color: note.color
+        }));
 
         /** @type {ProjectData} */
         const projectData = {
             imageDataUrl: imageDataUrl,
-            stickyNotes: serializedNotes
+            stickyNotes: serializedNotes,
+            // Save tool and brush state
+            toolState: {
+                currentTool: state.currentTool,
+                brushSize: state.sizePicker ? state.sizePicker.value : '5',
+                brushColor: state.brushColor,
+                brushType: state.brushType ? state.brushType.value : 'smooth'
+            }
         };
 
         // Use a unique key for each tab's project
-        localStorage.setItem(`${config.storage.PROJECT_KEY}-${activeTab.id}`, JSON.stringify(projectData));
+        const projectKey = `${config.storage.PROJECT_KEY}-${activeTab.id}`;
+        localStorage.setItem(projectKey, JSON.stringify(projectData));
+
     } catch (error) {
         console.error('Failed to save project:', error);
     }
@@ -257,10 +259,11 @@ export const loadProject = () => {
     try {
         const state = getState();
         const config = getConfig();
-        const activeTab = getActiveTab(); // Get active tab
-        if (!activeTab) return;
+        const activeTab = getActiveTab();
+        if (!activeTab || !state) return;
 
-        const savedData = localStorage.getItem(`${config.storage.PROJECT_KEY}-${activeTab.id}`); // Use unique key
+        const projectKey = `${config.storage.PROJECT_KEY}-${activeTab.id}`;
+        const savedData = localStorage.getItem(projectKey);
         if (!savedData) return;
 
         /** @type {ProjectData} */
@@ -273,8 +276,8 @@ export const loadProject = () => {
          */
         img.onload = () => {
             try {
-                const canvas = activeTab.drawingCanvas; // Use activeTab.drawingCanvas
-                const ctx = activeTab.drawingCtx; // Use activeTab.drawingCtx
+                const canvas = activeTab.drawingCanvas;
+                const ctx = activeTab.drawingCtx;
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0);
@@ -288,46 +291,85 @@ export const loadProject = () => {
             }
         };
 
-        /**
-         * Image error handler
-         * @returns {void}
-         */
         img.onerror = () => {
             console.error('Failed to load project image');
         };
 
         img.src = projectData.imageDataUrl;
 
+        // Restore tool state
+        if (projectData.toolState) {
+            const { toolState } = projectData;
+            state.currentTool = toolState.currentTool || 'brush';
+            state.brushColor = toolState.brushColor || '#000000';
+
+            if (state.sizePicker) {
+                state.sizePicker.value = toolState.brushSize || '5';
+            }
+
+            if (state.sizeDisplay) {
+                state.sizeDisplay.textContent = (toolState.brushSize || '5') + 'px';
+            }
+
+            if (state.brushType) {
+                state.brushType.value = toolState.brushType || 'smooth';
+            }
+
+            if (state.colorPickerTrigger) {
+                state.colorPickerTrigger.style.backgroundColor = state.brushColor;
+            }
+
+            if (state.colorPicker) {
+                state.colorPicker.color.hexString = state.brushColor;
+            }
+
+            // Update active button UI
+            const toolButtons = [
+                state.brushBtn,
+                state.eraserBtn,
+                state.lineBtn
+            ];
+            
+            toolButtons.forEach(
+                btn => btn &&
+                btn.classList.remove('active')
+            );
+            
+            if (state.currentTool === 'brush' && state.brushBtn) {
+                state.brushBtn.classList.add('active');
+            } else if (state.currentTool === 'eraser' && state.eraserBtn) {
+                state.eraserBtn.classList.add('active');
+            } else if (state.currentTool === 'line' && state.lineBtn) {
+                state.lineBtn.classList.add('active');
+            }
+        }
+
         // Clear existing sticky notes before loading
         activeTab.stickyNotes.forEach(note => note.remove());
         activeTab.stickyNotes.length = 0;
 
         // Load sticky notes
-        if (createStickyNote && projectData.stickyNotes) { // Use imported createStickyNote
-            const savedNotes = projectData.stickyNotes;
-            const savedLen = savedNotes.length;
-
-            for (let i = 0; i < savedLen; i++) {
-                const noteData = savedNotes[i];
+        if (createStickyNote && projectData.stickyNotes) {
+            projectData.stickyNotes.forEach(noteData => {
                 try {
                     const sticky = createStickyNote(
                         noteData.x,
                         noteData.y,
                         noteData.width,
                         noteData.height,
-                        activeTab.svgGroup // Pass activeTab.svgGroup
+                        activeTab.svgGroup
                     );
 
                     if (sticky) {
                         sticky.text = noteData.text;
                         sticky.textElement.textContent = noteData.text;
                         sticky.rect.setAttribute('fill', noteData.color);
-                        activeTab.stickyNotes.push(sticky); // Use activeTab.stickyNotes
+                        activeTab.stickyNotes.push(sticky);
                     }
                 } catch (noteErr) {
                     console.error('Error loading sticky note:', noteErr);
                 }
-            }
+            });
         }
     } catch (error) {
         console.error('Failed to load project:', error);

@@ -1,6 +1,6 @@
 import { getState, getConfig } from '../utils/config.js';
 import { setupCanvas, requestRedraw, initSVG } from './canvas.js';
-import { saveToHistory } from './history.js';
+import { saveToHistory, loadProject } from './history.js';
 import { setupCanvasListeners, cleanupCanvasListeners } from '../controllers/events.js';
 
 let tabCounter = 0;
@@ -296,6 +296,7 @@ export const createNewTab = () => {
     try {
         setupCanvas();
         initSVG();
+        loadProject();
         setupCanvasListeners();
         saveToHistory();
         requestRedraw();
@@ -513,6 +514,7 @@ export const initializeTabs = () => {
         try {
             setupCanvas();
             initSVG();
+            loadProject();
             setupCanvasListeners();
             saveToHistory();
             requestRedraw();
@@ -533,13 +535,13 @@ export const initializeTabs = () => {
 
     document.addEventListener('keydown', (e) => {
         // Ctrl/Cmd + T: New tab
-        if ((e.ctrlKey || e.metaKey) && e.key === 't') {
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyT') {
             e.preventDefault();
             createNewTab();
         }
         
         // Ctrl/Cmd + W: Close tab - only if more than 1 tab
-        if ((e.ctrlKey || e.metaKey) && e.key === 'w' && tabs.length > 1) {
+        if ((e.ctrlKey || e.metaKey) && e.code === 'KeyW' && tabs.length > 1) {
             e.preventDefault();
             const activeTab = getActiveTab();
             if (activeTab) {

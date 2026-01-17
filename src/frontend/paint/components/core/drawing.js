@@ -105,7 +105,10 @@ export const startDrawing = async (e) => {
     await ensureReady();
     const state = getState();
     const activeTab = getActiveTab();
-    if (!state || !activeTab) return;
+
+    if (!state || !activeTab || !activeTab.drawingCtx) {
+        return;
+    }
 
     if (activeTab.isDraggingSticky) return;
 
@@ -121,21 +124,26 @@ export const startDrawing = async (e) => {
 
     e.preventDefault();
     e.stopPropagation();
+    
+    const currentTool = state.currentTool || 'brush';
 
-    if (isDoubleClick(e)) {
+    if (currentTool === 'brush' && isDoubleClick(e)) {
         console.log('Double-click detected, creating sticky note');
         if (typeof window.createStickyNote === 'function') {
             const coords = getCanvasCoords(e);
             window.createStickyNote(coords.x, coords.y);
         }
-
         resetClickCount();
         return; 
     }
 
-    console.log('Single click, starting drawing. Click count:', clickCount);
+    console.log(`Single click, starting ${currentTool}.`);
     activeTab.isDrawing = true;
     activeTab.points = [getCanvasCoords(e)];
+    
+    if ((currentTool === 'line' || currentTool === 'eraser') && activeTab.drawingCtx) {
+        activeTab.operationSnapshot = activeTab.drawingCtx.getImageData(0, 0, activeTab.drawingCanvas.width, activeTab.drawingCanvas.height);
+    }
 
     if (activeTab.previewCtx && activeTab.previewCanvas) {
         activeTab.previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
@@ -153,39 +161,63 @@ export const draw = (e) => {
     if (!state || !activeTab || !activeTab.isDrawing || activeTab.isDraggingSticky) return;
 
     const previewCtx = activeTab.previewCtx;
-    if (!previewCtx || !activeTab.previewCanvas) return;
+    const drawingCtx = activeTab.drawingCtx;
+    if (!previewCtx || !drawingCtx) return;
 
-    const currentBrush = state.brushType?.value || 'smooth';
+    const currentTool = state.currentTool || 'brush';
+    const currentPoint = getCanvasCoords(e);
 
-    if (state.isShiftDown) {
-        const startPoint = activeTab.points[0];
-        const currentPoint = getCanvasCoords(e);
-        
-        activeTab.points = [startPoint, currentPoint];
-
-        previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
-
-        if (currentBrush === 'smooth') {
-            previewCtx.strokeStyle = state.brushColor || '#000000';
-            previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
-            drawLine(previewCtx, activeTab.points);
-        } else {
-            createSmoothTexture(previewCtx, activeTab.points[0], activeTab.points[1]);
-        }
-    } else {
-        activeTab.points.push(getCanvasCoords(e));
-
-        if (currentBrush === 'smooth') {
-            previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
-            previewCtx.strokeStyle = state.brushColor || '#000000';
-            previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
-            drawLine(previewCtx, activeTab.points);
-        } else {
-            const len = activeTab.points.length;
-            if (len > 1) {
-                createSmoothTexture(previewCtx, activeTab.points[len - 2], activeTab.points[len - 1]);
+    switch (currentTool) {
+        case 'line':
+            // For line, draw on preview canvas over a restored snapshot of the main canvas
+            if (activeTab.operationSnapshot) {
+                previewCtx.putImageData(activeTab.operationSnapshot, 0, 0);
             }
-        }
+            previewCtx.strokeStyle = state.brushColor || '#000000';
+            previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
+            drawLine(previewCtx, [activeTab.points[0], currentPoint]);
+            break;
+
+        case 'eraser':
+            // For real-time eraser, restore snapshot and redraw full path on main canvas
+            if (activeTab.operationSnapshot) {
+                drawingCtx.putImageData(activeTab.operationSnapshot, 0, 0);
+            }
+            activeTab.points.push(currentPoint);
+            drawingCtx.globalCompositeOperation = 'destination-out';
+            drawingCtx.strokeStyle = '#000000';
+            drawingCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
+            drawLine(drawingCtx, activeTab.points);
+            drawingCtx.globalCompositeOperation = 'source-over';
+            break;
+
+        case 'brush':
+        default:
+            const currentBrush = state.brushType?.value || 'smooth';
+            previewCtx.strokeStyle = state.brushColor || '#000000';
+            previewCtx.lineWidth = parseFloat(state.sizePicker?.value || 2);
+
+            if (state.isShiftDown) {
+                previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
+                const startPoint = activeTab.points[0];
+                if (currentBrush === 'smooth') {
+                    drawLine(previewCtx, [startPoint, currentPoint]);
+                } else {
+                    createSmoothTexture(previewCtx, startPoint, currentPoint);
+                }
+            } else {
+                activeTab.points.push(currentPoint);
+                if (currentBrush === 'smooth') {
+                    previewCtx.clearRect(0, 0, activeTab.previewCanvas.width, activeTab.previewCanvas.height);
+                    drawLine(previewCtx, activeTab.points);
+                } else {
+                    const len = activeTab.points.length;
+                    if (len > 1) {
+                        createSmoothTexture(previewCtx, activeTab.points[len - 2], activeTab.points[len - 1]);
+                    }
+                }
+            }
+            break;
     }
 
     if (typeof window.requestRedraw === 'function') {
@@ -203,9 +235,16 @@ export const stopDrawing = () => {
     if (!state || !activeTab || !activeTab.isDrawing) return;
 
     activeTab.isDrawing = false;
+    const currentTool = state.currentTool || 'brush';
+    const drawingCtx = activeTab.drawingCtx;
 
-    if (activeTab.drawingCtx && activeTab.previewCanvas) {
-        activeTab.drawingCtx.drawImage(activeTab.previewCanvas, 0, 0);
+    if (currentTool !== 'eraser' && drawingCtx && activeTab.previewCanvas) {
+        drawingCtx.drawImage(activeTab.previewCanvas, 0, 0);
+    }
+    
+    // Cleanup for tools that used a snapshot
+    if (activeTab.operationSnapshot) {
+        activeTab.operationSnapshot = null;
     }
 
     if (activeTab.previewCtx && activeTab.previewCanvas) {

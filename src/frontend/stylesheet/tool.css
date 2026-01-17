@@ -1,0 +1,123 @@
+.toolbar-container {
+    position: fixed;
+    left: 46%;
+    transform: translateX(-50%);
+    z-index: 2;
+    bottom: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    animation: toolbar_animation 450ms cubic-bezier(0.86, 0, 0.07, 1) forwards;
+}
+
+.hamburger-btn {
+    position: fixed;
+    right: -250px;
+    bottom: 22.5px;
+    height: 44px;
+    width: 44px;
+    background: var(--toolbar-bg);
+    outline: var(--theme-border) solid 1.5px;
+    border-radius: 100vmax;
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hamburger-btn svg {
+    transform: scale(145%);
+}
+
+
+/* Added for hamburger tool menu */
+#tool-menu {
+    position: fixed;
+    bottom: 80px;
+    /* left: 50%; */
+    transform: translateX(190%);
+    right: 0;
+    background: var(--toolbar-bg);
+    outline: var(--theme-border) solid 1.5px;
+    border-radius: 8px;
+    z-index: 1001;
+    padding: 0.4rem;
+    transform-origin: bottom center;
+    display: flex;
+    /* gap: 0.25rem; */
+
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+
+    width: 130px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.pop-up {
+    animation: pop-up 350ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes pop-up {
+    0% {
+        transform: translateX(190%) scale(0.7);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(190%) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes toolbar_animation {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Menu */
+
+.tool-btn {
+    all: unset;
+
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    /* justify-content: space-between; */
+    gap: 4px;
+    padding: 0.3rem 0.5rem;
+    border-radius: 10px;
+
+    height: 20px;
+}
+
+.tool-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.tool-btn span {
+    font-size: 14px;
+    font-weight: 430;
+    font-family: var(--font-text), sans-serif;
+    letter-spacing: 0.2px;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.tool-btn:hover {
+    background-color: var(--HoverColor);
+}

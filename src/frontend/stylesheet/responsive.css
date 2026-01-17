@@ -1,0 +1,99 @@
+@media (max-width: 480px) {
+    .toolbar-container {
+        left: 47.5%;
+        bottom: 8px;
+    }
+
+    .toolbar {
+        bottom: 10px;
+        padding: 6px;
+        gap: 4px;
+        max-width: calc(100vw - 40px);
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .toolbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .hamburger-btn {
+        bottom: 12px;
+        width: initial;
+        height: 40px;
+        left: 165px;
+        background: transparent;
+        outline: none;
+    }
+
+    .hamburger-btn svg {
+        transform: scale(100%);
+    }
+
+    #tool-menu {
+        transform: translateX(190px);
+        bottom: 70px;
+    }
+
+    @keyframes pop-up {
+        0% {
+            transform: translateX(190px) scale(0.7);
+            opacity: 0;
+        }
+
+        100% {
+            transform: translateX(190px) scale(1);
+            opacity: 1;
+        }
+    }
+
+    .control {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    select {
+        padding: 0.4rem 0.6rem;
+        font-size: 13px;
+        min-width: auto;
+        white-space: nowrap;
+    }
+
+    .color-picker,
+    .color-picker .color-preview,
+    .color-picker input[type="color"] {
+        width: 26px;
+        height: 26px;
+    }
+
+    input[type="range"] {
+        width: 50px;
+        margin-left: 0.4rem;
+    }
+
+    button {
+        padding: 0.4rem 0.8rem;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .clear-btn {
+        padding: 0.4rem 0.6rem;
+    }
+
+    .tool-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .tool-btn span {
+        font-size: 13px;
+    }
+
+    .size-display {
+        display: none;
+    }
+}

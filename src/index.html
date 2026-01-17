@@ -1,9 +1,7 @@
 <!-- 
-    PaintAPP
-    Made by Mint teams
-    
-    Updated: 2025-10-01
-    License: MIT
+PaintAPP
+Made by Mint teams
+License: MIT
 -->
 
 <!DOCTYPE html>
@@ -21,12 +19,13 @@
             font-src    'self' https://fonts.gstatic.com;
             img-src     'self' data: blob:;
             connect-src 'self';
-        "
-    />
+    "/>
     <title>PaintAPP</title>
     <link rel="stylesheet" href="./frontend/stylesheet/reset.css" crossorigin="anonymous" />
     <link rel="stylesheet" href="./frontend/stylesheet/paint.css" crossorigin="anonymous" />
     <link rel="stylesheet" href="./frontend/stylesheet/tabbar.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./frontend/stylesheet/tool.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="./frontend/stylesheet/responsive.css" crossorigin="anonymous" />
     <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
 </head>
 
@@ -46,7 +45,9 @@
 
     <!-- Content -->
 
-    <div class="toolbar"></div>
+    <div class="toolbar-container">
+        <div class="toolbar"></div>
+    </div>
 
     <div id="canvas-area"></div>
 

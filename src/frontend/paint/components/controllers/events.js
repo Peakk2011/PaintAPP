@@ -8,6 +8,46 @@ import { adjustTheme } from '../core/tools.js';
 
 let globalListenersInitialized = false;
 
+/**
+ * Updates the cursor for the active canvas based on the current tool and size.
+ */
+export const updateCursor = () => {
+    const state = getState();
+    const activeTab = getActiveTab();
+    
+    if (!state || !activeTab || !activeTab.canvasContainer) {
+        return;
+    }
+
+    const tool = state.currentTool;
+    const size = state.sizePicker ? state.sizePicker.value : 10;
+    const container = activeTab.canvasContainer;
+
+    if (tool === 'eraser') {
+        const svg = `
+            <svg
+                width="${size}"
+                height="${size}"
+                viewBox="0 0 ${size} ${size}"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <circle
+                    cx="${size / 2}"
+                    cy="${size / 2}"
+                    r="${size / 2 - 1}"
+                    fill="none"
+                    stroke="#999999"
+                    stroke-width="2.5"
+                />
+            </svg>
+        `;
+        const hotspot = size / 2;
+        container.style.cursor = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${hotspot} ${hotspot}, auto`;
+    } else {
+        container.style.cursor = 'crosshair';
+    }
+};
+
 export const setupEventListeners = () => {
     const state = getState();
     if (!state) {
@@ -28,6 +68,27 @@ export const setupEventListeners = () => {
  * @param {Object} state - Global state object
  */
 const setupGlobalListeners = (state) => {
+    // Manage active tool state
+    const setActiveTool = (tool) => {
+        state.currentTool = tool;
+        const toolButtons = [
+            { btn: state.brushBtn, name: 'brush' },
+            { btn: state.eraserBtn, name: 'eraser' },
+            { btn: state.lineBtn, name: 'line' },
+        ];
+        toolButtons.forEach(item => {
+            if (item.btn) {
+                if (item.name === tool) {
+                    item.btn.classList.add('active');
+                } else {
+                    item.btn.classList.remove('active');
+                }
+            }
+        });
+        console.log(`Tool changed to: ${tool}`);
+        updateCursor();
+    };
+
     // Color picker toggle
     if (state.colorPickerTrigger) {
         state.colorPickerTrigger.addEventListener('click', (e) => {
@@ -39,16 +100,53 @@ const setupGlobalListeners = (state) => {
         });
     }
 
-    // Close color picker when clicking outside
+    // Hamburger menu toggle
+    if (state.hamburgerBtn) {
+        state.hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (state.toolMenu) {
+                const isHidden = state.toolMenu.classList.contains('hidden');
+                if (isHidden) {
+                    state.toolMenu.classList.remove('hidden');
+                    state.toolMenu.classList.add('pop-up');
+                } else {
+                    state.toolMenu.classList.add('hidden');
+                    state.toolMenu.classList.remove('pop-up');
+                }
+            }
+        });
+    }
+
+    // Close pop-ups when clicking outside
     document.addEventListener('click', (e) => {
+        // Color picker
         if (state.iroPickerContainer && 
             !state.iroPickerContainer.contains(e.target) &&
             e.target !== state.colorPickerTrigger) {
             state.iroPickerContainer.style.display = 'none';
         }
+        
+        // Tool menu
+        if (state.toolMenu &&
+            !state.toolMenu.contains(e.target) &&
+            e.target !== state.hamburgerBtn &&
+            !state.hamburgerBtn.contains(e.target)) {
+            state.toolMenu.classList.add('hidden');
+            state.toolMenu.classList.remove('pop-up');
+        }
     });
 
     // Tool buttons
+    if (state.brushBtn) {
+        state.brushBtn.addEventListener('click', () => setActiveTool('brush'));
+    }
+    if (state.eraserBtn) {
+        state.eraserBtn.addEventListener('click', () => setActiveTool('eraser'));
+    }
+    if (state.lineBtn) {
+        state.lineBtn.addEventListener('click', () => setActiveTool('line'));
+    }
+
     if (state.clearBtn) {
         state.clearBtn.addEventListener('click', clearCanvas);
     }
@@ -56,10 +154,14 @@ const setupGlobalListeners = (state) => {
         state.saveBtn.addEventListener('click', saveImage);
     }
 
+    // Set initial active tool
+    setActiveTool('brush');
+
     // Brush size display
     if (state.sizePicker && state.sizeDisplay) {
         state.sizePicker.addEventListener('input', () => {
             state.sizeDisplay.textContent = state.sizePicker.value + 'px';
+            updateCursor(); // Update cursor on size change
         });
     }
 
@@ -122,6 +224,9 @@ export const setupCanvasListeners = () => {
 
     const container = activeTab.canvasContainer;
     const state = getState();
+
+    // Update cursor for the new active tab
+    updateCursor();
 
     if (container.dataset.listenersSetup === 'true') {
         return;

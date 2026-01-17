@@ -1,0 +1,59 @@
+{
+  "hamburger": {
+    "id": "hamburger-btn",
+    "class": "hamburger-btn",
+    "title": "More Tools",
+    "svg": {
+      "xmlns": "http://www.w3.org/2000/svg",
+      "height": "24px",
+      "viewBox": "0 -960 960 960",
+      "width": "24px",
+      "fill": "var(--theme-fg)",
+      "path": "M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z"
+    }
+  },
+  "tools": [
+    {
+      "id": "brushBtn",
+      "class": "tool-btn active",
+      "title": "Brush",
+      "svg": {
+        "xmlns": "http://www.w3.org/2000/svg",
+        "height": "24px",
+        "viewBox": "0 -960 960 960",
+        "width": "24px",
+        "fill": "var(--theme-fg)",
+        "path": "m249-120-69-69q-11-11-11-25.5t11-25.5l501-501q11-11 25.5-11t25.5 11l69 69q11 11 11 25.5T802-680L301-179q-11 11-25.5 11T249-120Zm181-40-84-84 399-399 84 84-399 399Z"
+      },
+      "span": "Brush"
+    },
+    {
+      "id": "eraserBtn",
+      "class": "tool-btn",
+      "title": "Eraser",
+      "svg": {
+        "xmlns": "http://www.w3.org/2000/svg",
+        "height": "24px",
+        "viewBox": "0 -960 960 960",
+        "width": "24px",
+        "fill": "var(--theme-fg)",
+        "path": "M690-240h190v80H610l80-80Zm-500 80-85-85q-23-23-23.5-57t22.5-58l440-456q23-24 56.5-24t56.5 23l199 199q23 23 23 57t-23 57L520-160H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+      },
+      "span": "Eraser"
+    },
+    {
+      "id": "lineBtn",
+      "class": "tool-btn",
+      "title": "Line",
+      "svg": {
+        "xmlns": "http://www.w3.org/2000/svg",
+        "height": "24px",
+        "viewBox": "0 -960 960 960",
+        "width": "24px",
+        "fill": "var(--theme-fg)",
+        "path": "M120-120v-80l160-160 200 80 320-320 56 56-376 376-200-80-160 160Z"
+      },
+      "span": "Line"
+    }
+  ]
+}

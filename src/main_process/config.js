@@ -35,7 +35,7 @@ export const windowConfig = {
         height: 600
     },
     min: {
-        width: 380,
+        width: 395,
         height: 440
     }
 };

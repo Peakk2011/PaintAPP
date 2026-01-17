@@ -68,6 +68,18 @@ const initializeUIElements = () => {
     state.clearBtn = document.getElementById(ids.clearBtn);
     state.saveBtn = document.getElementById(ids.saveBtn);
 
+    // Hamburger menu elements
+    state.hamburgerBtn = document.getElementById('hamburger-btn');
+    state.toolMenu = document.getElementById('tool-menu');
+
+    // Tool buttons (now inside the menu)
+    state.brushBtn = document.getElementById('brushBtn');
+    state.eraserBtn = document.getElementById('eraserBtn');
+    state.lineBtn = document.getElementById('lineBtn');
+
+    // Initial tool state
+    state.currentTool = 'brush';
+
     // Log warnings for missing elements
     const elementChecks = [
         { name: 'colorPickerTrigger', element: state.colorPickerTrigger },
@@ -76,12 +88,17 @@ const initializeUIElements = () => {
         { name: 'sizeDisplay', element: state.sizeDisplay },
         { name: 'brushType', element: state.brushType },
         { name: 'clearBtn', element: state.clearBtn },
-        { name: 'saveBtn', element: state.saveBtn }
+        { name: 'saveBtn', element: state.saveBtn },
+        { name: 'hamburgerBtn', element: state.hamburgerBtn },
+        { name: 'toolMenu', element: state.toolMenu },
+        { name: 'brushBtn', element: state.brushBtn },
+        { name: 'eraserBtn', element: state.eraserBtn },
+        { name: 'lineBtn', element: state.lineBtn }
     ];
 
     elementChecks.forEach(check => {
         if (!check.element) {
-            console.warn(`Not found: ${check.name} (${ids[check.name]})`);
+            console.warn(`Not found: ${check.name} (${ids[check.name] || check.name})`);
         }
     });
 };

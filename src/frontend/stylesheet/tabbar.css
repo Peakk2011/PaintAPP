@@ -201,6 +201,7 @@
     flex: 1;
     height: calc(100% - 36px);
     overflow: hidden;
+    cursor: crosshair;
 
     transition: top 0.2s ease-in-out, height 0.2s ease-in-out;
 }
