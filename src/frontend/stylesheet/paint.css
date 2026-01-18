@@ -1,11 +1,10 @@
 /* 
-    PaintAPP
-    Made by Mint teams
-    
-    Updated: 2025-10-01
-    License: MIT
+PaintAPP - Canvas & Toolbar (paint.css)
+Made by Mint teams
+Updated: 2025-18-01
 */
 
+/* Theme variables for paint canvas */
 :root {
     --toolbar-bg: #f2f2f2;
     --toolbar-border: hsl(0, 0%, 88%);
@@ -38,6 +37,7 @@
     }
 }
 
+/* ========== TITLEBAR ========== */
 #Titlebar-Dragable {
     -webkit-app-region: drag;
     width: 100%;
@@ -46,6 +46,7 @@
     top: 0;
 }
 
+/* ========== CANVAS ========== */
 #canvasContainer {
     position: fixed;
     top: 0;
@@ -68,6 +69,7 @@
     transition: background-color 0.3s, color 0.3s;
 }
 
+/* ========== TOOLBAR ========== */
 .toolbar {
     position: fixed;
     bottom: 22.5px;
@@ -92,6 +94,7 @@
     gap: 10px;
 }
 
+/* ========== FORM CONTROLS ========== */
 select {
     padding: 0.5rem 0.8rem;
     border-radius: 100vmax;
@@ -114,6 +117,7 @@ select:hover {
     background-color: var(--PrimaryButtonsColors);
 }
 
+/* Color Picker */
 .color-picker {
     position: relative;
     display: inline-block;
@@ -147,6 +151,7 @@ select:hover {
     filter: brightness(1.2);
 }
 
+/* Range Slider */
 input[type="range"] {
     width: 60px;
     margin-left: 0.8rem;
@@ -158,7 +163,6 @@ input[type="range"] {
 
 input[type="range"]::-webkit-slider-runnable-track {
     height: 8px;
-    /* background: var(--input-border); */
     background: var(--theme-border);
     border-radius: 100vmax;
     outline: var(--input-border) solid 1px;
@@ -172,7 +176,6 @@ input[type="range"]::-webkit-slider-thumb {
     background: var(--theme-accent);
     outline: var(--input-border) solid 1.5px;
     border-radius: 50%;
-    /* margin-top: -4.25px; */
     margin-top: -4px;
     cursor: pointer;
     position: relative;
@@ -183,6 +186,7 @@ input[type="range"]:focus {
     outline: none;
 }
 
+/* Buttons */
 button {
     padding: 0.5rem 1rem;
     background: var(--theme-accent);

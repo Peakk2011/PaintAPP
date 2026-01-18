@@ -1,9 +1,7 @@
 /* 
-    PaintAPP - Responsive Tabs
-    Made by Mint teams
-  
-    Updated: 2025-10-01
-    License: MIT
+PaintAPP - Tab System (tabbar.css)
+Made by Mint teams
+Updated: 2025-18-01
 */
 
 #tab-bar {
@@ -15,9 +13,7 @@
     display: flex;
     align-items: center;
     z-index: 999;
-
     transition: transform 250ms ease-in-out, opacity 100ms ease-in-out;
-
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -45,7 +41,6 @@
     overflow-x: auto;
     overflow-y: hidden;
     height: 100%;
-
     scrollbar-width: none;
     transition: opacity 0.2s ease-in-out;
 }
@@ -63,18 +58,14 @@
     white-space: nowrap;
     font-size: 14px;
     color: var(--text-secondary);
-
     flex: 1 1 auto;
     min-width: 55px;
     max-width: 110px;
     text-align: left;
-
     padding: 0 1rem;
-
     border: none;
     outline: none;
     border-radius: 0;
-
     transition: background-color 50ms ease;
     animation: tabContainerFade 250ms ease-in-out;
     -webkit-app-region: no-drag;
@@ -100,7 +91,6 @@
     text-overflow: ellipsis;
     flex-grow: 1;
     pointer-events: auto;
-
     font-family: var(--font-text), sans-serif;
     font-weight: 450;
     letter-spacing: 0.35px;
@@ -116,13 +106,10 @@
     background: var(--canvas-bg) !important;
     border: none !important;
     outline: none !important;
-
     color: var(--text-primary);
-
     user-select: text;
     -webkit-user-select: text;
     -moz-user-select: text;
-
     font-family: var(--font-text), sans-serif;
     font-weight: 450;
     letter-spacing: 0.35px;
@@ -130,7 +117,6 @@
 
 .tab-name-input:focus {
     background: var(--canvas-bg) !important;
-
     border: none !important;
     outline: none !important;
 }
@@ -143,7 +129,6 @@
     font-size: 28px;
     line-height: 0.7;
     font-weight: 100;
-
     color: var(--text-secondary);
     transition: all 0.15s ease;
     flex-shrink: 0;
@@ -157,7 +142,6 @@
     opacity: 100%;
 }
 
-/* New Tab Button */
 #new-tab-btn {
     width: 42px;
     height: 36px;
@@ -167,7 +151,7 @@
     outline: none;
     background-color: transparent;
     color: var(--text-primary);
-    font-family: var(--font-display), sans-serif;
+    font-family: var(--font-primary), sans-serif;
     cursor: pointer;
     border-radius: 6px;
     flex-shrink: 0;
@@ -176,9 +160,7 @@
     justify-content: center;
     transition: all 0.15s ease;
     opacity: 90%;
-
     -webkit-app-region: no-drag;
-
     position: fixed;
     right: 0;
 }
@@ -191,18 +173,15 @@
     left: 0;
 }
 
-/* Canvas Area */
 #canvas-area {
     position: absolute;
     top: 36px;
     left: 0;
-
     width: 100%;
     flex: 1;
     height: calc(100% - 36px);
     overflow: hidden;
     cursor: crosshair;
-
     transition: top 0.2s ease-in-out, height 0.2s ease-in-out;
 }
 
@@ -223,15 +202,12 @@
     display: none;
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
+    scroll-behavior: smooth;
 }
 
 .canvas-container.active {
     display: block;
     opacity: 1;
-}
-
-.canvas-container {
-    scroll-behavior: smooth;
 }
 
 .canvas-container::-webkit-scrollbar {
@@ -257,7 +233,6 @@
         opacity: 0;
         transform: translateY(-5px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -268,7 +243,6 @@
     from {
         opacity: 0;
     }
-
     to {
         opacity: 1;
     }

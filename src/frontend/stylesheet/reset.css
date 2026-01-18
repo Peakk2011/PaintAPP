@@ -1,144 +1,70 @@
 /* 
-    PaintAPP
-    Made by Mint teams
-    
-    Updated: 2025-10-01
-    License: MIT
+PaintAPP - Theme (reset.css)
+Made by Mint teams
+Updated: 2025-18-01
+License: MIT
 */
 
-/**
- * @import {string} url - Google Fonts URL
- * @font-face Manrope - Variable font with weights 200-800
- * @font-face Inter Tight - Variable font with weights 100-900, italic support
- */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap');
 
-/**
- * @selector li, a
- * @description Reset default list and link styles
- * @property {none} text-decoration
- * @property {none} list-style
- */
+/* Base reset */
 :where(li, a) {
     text-decoration: none;
     list-style: none;
 }
 
-/**
- * @selector ::-webkit-scrollbar
- * @description Hide scrollbar for webkit browsers
- * @property {0px} width
- * @property {transparent} background
- */
 ::-webkit-scrollbar {
-    width: 0px;
+    width: 0;
     background: transparent;
 }
 
-/**
- * @selector :root
- * @description CSS Custom Properties (CSS Variables) - Design System Tokens
- * 
- * @typedef {Object} ThemeColors
- * @property {string} --theme-bg - Background color: #0F0F0F
- * @property {string} --theme-fg - Foreground/text color: #ffffff
- * @property {string} --theme-primary - Primary color: #080808
- * @property {string} --theme-accent - Accent color: hsl(120, 7%, 85%)
- * @property {string} --theme-accent-selection-texts - Text selection: hsl(120, 12%, 82.5%)
- * @property {string} --theme-border - Border color: hsl(0, 0%, 18%)
- * @property {string} --theme-card - Card background: #141414
- * @property {string} --theme-titlebar - Titlebar background: #0f0f0f
- * @property {string} --theme-links - Link color: #C4C4C4
- * @property {string} --HoverColor - Hover state color: #313131
- * @property {string} --SoftHoverColor - Subtle hover: #1e1e1e
- * @property {string} --NameColorSvg - SVG icon color: #fff
- * 
- * @typedef {Object} Typography
- * @property {string} --font-primary - Primary font stack: "Manrope", sans-serif
- * @property {string} --font-text - Body text font: "Inter Tight", system-ui, sans-serif
- * @property {string} --font-size-base - Base font size: 14px
- * @property {number} --font-scale - Type scale ratio: 1.2
- * @property {number} --line-height - Base line height: 1.5
- * 
- * @typedef {Object} Spacing
- * @property {string} --spacing-unit - Base spacing unit: 8px
- * @property {string} --spacing-xs - Extra small: calc(8px * 0.5) = 4px
- * @property {string} --spacing-sm - Small: 8px
- * @property {string} --spacing-md - Medium: calc(8px * 2) = 16px
- * @property {string} --spacing-lg - Large: calc(8px * 3) = 24px
- * 
- * @typedef {Object} Transitions
- * @property {string} --transition-fast - Fast transition: 150ms cubic-bezier(0.4, 0, 0.2, 1)
- * @property {string} --transition-normal - Normal transition: 300ms cubic-bezier(0.4, 0, 0.2, 1)
- * @property {string} --menu-transition - Menu animation: 300ms cubic-bezier(0.075, 0.82, 0.165, 1)
- * @property {string} --MenuEaseTransition - Menu ease: 300ms cubic-bezier(0.2, 0.0, 0, 1.0)
- * @property {string} --transitionEaseNormal - Ease normal: 480ms cubic-bezier(0.2, 0.0, 0, 1.0)
- * 
- * @typedef {Object} TitlebarTheme
- * @property {string} --TitlebarColor - Titlebar background: #0f0f0f
- * @property {string} --TitlebarColorButton - Button color: #fff
- * @property {string} --TitlebarColorBorder - Border style: solid 1px var(--theme-border)
- * @property {string} --TitlebarColorHover - Hover state: var(--SoftHoverColor)
- * 
- * @typedef {Object} ContextMenuTheme
- * @property {string} --ctx-menu-bg - Menu background: #1A1A1A
- * @property {string} --ctx-menu-hover - Hover state: #313131
- * @property {string} --ctx-menu-active - Active state: #0c0c0c
- * @property {string} --ctx-menu-text - Text color: #e3e3e3
- * @property {string} --ctx-menu-text-hover - Text hover: #ffffff
- * @property {string} --ctx-menu-shadow - Box shadow (multi-layer)
- * 
- * @typedef {Object} LegacyVariables
- * @property {number} --ResetPadding - Reset padding: 0
- * @property {number} --ResetMargin - Reset margin: 0
- * @property {string} --ResetBoxSizing - Box sizing: border-box
- * @property {string} --color-primary - Alias of --theme-primary
- * @property {string} --border - Border shorthand: 1px solid var(--theme-border)
- * @property {string} --ColorHighlight - Alias of --theme-accent
- * @property {string} --CardMainColor - Alias of --theme-card
- * @property {string} --accent - Alias of --theme-accent
- * @property {string} --HRborder - HR border: solid 1px #2f2f2f
- * @property {string} --RippleEffectColor - Ripple effect: rgba(255, 255, 255, 0.270)
- * @property {string} --PrimaryButtonsColors - Button colors: #222 or var(--HoverColor)
- * @property {string} --LightmodeToggleButtons - Light mode toggle: none | block
- * @property {string} --DarkmodeToggleButtons - Dark mode toggle: block | none
- * @property {string} --BackgroundBlurColor - Backdrop blur: rgba(15, 15, 15, 0.920)
- */
+/* Design tokens (dark mode) */
 :root {
-    /* Theme Colors */
+    /* Colors */
     --theme-bg: #0C0C0C;
     --theme-fg: #ffffff;
     --theme-primary: #080808;
     --theme-accent: hsl(120, 7%, 85%);
-    --theme-accent-selection-texts: hsl(120, 12%, 82.5%);
-    --theme-border: hsl(0, 0%, 18%);
+    --theme-accent-selection-texts: hsl(120, 2.5%, 20%);
+    --theme-border: #3f3f3f;
     --theme-card: #141414;
     --theme-titlebar: #0f0f0f;
     --theme-links: #C4C4C4;
     --HoverColor: #313131;
     --SoftHoverColor: #1e1e1e;
     --NameColorSvg: #fff;
-
+    
+    /* Typography */
     --font-primary: "Manrope", sans-serif;
     --font-text: "Inter Tight", system-ui, sans-serif;
     --font-size-base: 14px;
-    --font-scale: 1.2;
     --line-height: 1.5;
-
+    
+    /* Spacing */
     --spacing-unit: 8px;
     --spacing-xs: calc(var(--spacing-unit) * 0.5);
     --spacing-sm: var(--spacing-unit);
     --spacing-md: calc(var(--spacing-unit) * 2);
     --spacing-lg: calc(var(--spacing-unit) * 3);
-
+    
+    /* Transitions */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
     --menu-transition: 300ms cubic-bezier(0.075, 0.82, 0.165, 1);
     --MenuEaseTransition: 300ms cubic-bezier(0.2, 0.0, 0, 1.0);
     --transitionEaseNormal: 480ms cubic-bezier(0.2, 0.0, 0, 1.0);
-
-    /* Legacy variables */
+    
+    /* Shadows */
+    --ctx-menu-shadow: 
+        0px 24px 38px rgba(0, 0, 0, 0.14),
+        0px 9px 46px rgba(0, 0, 0, 0.12),
+        0px 11px 15px rgba(0, 0, 0, 0.20);
+    
+    /* Buttons */
+    --PrimaryButtonsColors: var(--HoverColor);
+    
+    /* Legacy */
     --ResetPadding: 0;
     --ResetMargin: 0;
     --ResetBoxSizing: border-box;
@@ -149,88 +75,31 @@
     --accent: var(--theme-accent);
     --HRborder: solid 1px #2f2f2f;
     --RippleEffectColor: rgba(255, 255, 255, 0.270);
-
-    /* Titlebar color */
+    
+    /* Titlebar */
     --TitlebarColor: #0f0f0f;
     --TitlebarColorButton: #fff;
     --TitlebarColorBorder: solid 1px var(--theme-border);
     --TitlebarColorHover: var(--SoftHoverColor);
-
-    /* Contextmenu color */
+    
+    /* Context Menu */
     --ctx-menu-bg: #1A1A1A;
     --ctx-menu-hover: #313131;
     --ctx-menu-active: #0c0c0c;
     --ctx-menu-text: #e3e3e3;
     --ctx-menu-text-hover: #ffffff;
-
-    /* Shadow */
-    --ctx-menu-shadow: 0px 24px 38px rgba(0, 0, 0, 0.14),
-        0px 9px 46px rgba(0, 0, 0, 0.12),
-        0px 11px 15px rgba(0, 0, 0, 0.20);
-
-    /* Buttons */
-    --PrimaryButtonsColors: #222;
-    --PrimaryButtonsColors: var(--HoverColor);
-    /* Toggle Essential logo */
+    
+    /* Toggle */
     --LightmodeToggleButtons: none;
     --DarkmodeToggleButtons: block;
-    /* BackgroundBlur color */
+    
+    /* Background Blur */
     --BackgroundBlurColor: rgba(15, 15, 15, 0.920);
+    
+    color-scheme: dark;
 }
 
-/**
- * @media (prefers-color-scheme: dark)
- * @description Dark theme color scheme (default)
- * @type {MediaQuery}
- * @condition System color scheme preference is dark
- * @overrides All theme color variables for dark mode
- */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --theme-bg: #0C0C0C;
-        --theme-fg: #ffffff;
-        --theme-primary: #080808;
-        --theme-accent: hsl(120, 7%, 85%);
-        --theme-accent-selection-texts: hsl(120, 2.5%, 20%);
-        --theme-border: #3f3f3f;
-        --theme-card: #141414;
-        --theme-titlebar: #0f0f0f;
-        --theme-links: #C4C4C4;
-        --HoverColor: #313131;
-        --SoftHoverColor: #1e1e1e;
-        --NameColorSvg: #fff;
-        --HRborder: solid 1px #2f2f2f;
-        --RippleEffectColor: rgba(255, 255, 255, 0.270);
-        --TitlebarColor: #0f0f0f;
-        --TitlebarColorButton: #fff;
-        --TitlebarColorBorder: solid 1px #3f3f3f;
-        --TitlebarColorHover: #1e1e1e;
-        --ctx-menu-bg: #1A1A1A;
-        --ctx-menu-hover: #313131;
-        --ctx-menu-active: #0c0c0c;
-        --ctx-menu-text: #e3e3e3;
-        --ctx-menu-text-hover: #ffffff;
-        --ctx-menu-shadow: 0px 24px 38px rgba(0, 0, 0, 0.14),
-            0px 9px 46px rgba(0, 0, 0, 0.12),
-            0px 11px 15px rgba(0, 0, 0, 0.20);
-        --PrimaryButtonsColors: #222;
-        --PrimaryButtonsColors: var(--HoverColor);
-        --LightmodeToggleButtons: none;
-        --DarkmodeToggleButtons: block;
-        --BackgroundBlurColor: rgba(15, 15, 15, 0.920);
-        color-scheme: dark;
-        background: var(--theme-bg);
-        color: var(--theme-fg);
-    }
-}
-
-/**
- * @media (prefers-color-scheme: light)
- * @description Light theme color scheme
- * @type {MediaQuery}
- * @condition System color scheme preference is light
- * @overrides All theme color variables for light mode
- */
+/* Light theme */
 @media (prefers-color-scheme: light) {
     :root {
         --theme-bg: #f9f9f9;
@@ -259,30 +128,14 @@
         --ctx-menu-shadow:
             0 12px 24px rgba(0, 0, 0, 0.05),
             0 24px 48px rgba(0, 0, 0, 0.06);
-        --PrimaryButtonsColors: #cecdc6;
         --PrimaryButtonsColors: var(--HoverColor);
         --LightmodeToggleButtons: block;
         --DarkmodeToggleButtons: none;
         --BackgroundBlurColor: rgba(250, 248, 240, 0.765);
         color-scheme: light;
-        background: var(--theme-bg);
-        color: var(--theme-fg);
     }
 }
 
-/**
- * @selector *
- * @description Universal reset and base styles
- * @type {CSSRuleSet}
- * 
- * @property {string} font-family - Inherited from --font-primary
- * @property {number} padding - Reset to 0
- * @property {number} margin - Reset to 0
- * @property {string} box-sizing - Set to border-box
- * @property {string} -webkit-user-select - Disable text selection: none
- * @property {string} user-select - Disable text selection: none
- * @property {string} transition - Disable transitions by default: 0s
- */
 * {
     font-family: var(--font-primary);
     padding: var(--ResetPadding);
@@ -293,69 +146,30 @@
     transition: 0s;
 }
 
-/**
- * @selector html
- * @description Root element styles
- * @type {CSSRuleSet}
- * 
- * @property {string} font-size - Base font size from --font-size-base (14px)
- * @property {string} background-color - Theme background color
- * @property {string} color - Theme foreground/text color
- */
 html {
     font-size: var(--font-size-base);
     background-color: var(--theme-bg);
     color: var(--theme-fg);
 }
 
-/**
- * @selector body
- * @description Body element styles
- * @type {CSSRuleSet}
- * 
- * @property {string} background-color - Theme background color
- * @property {string} color - Theme foreground/text color
- * @property {number} line-height - Line height from --line-height (1.5)
- */
 body {
     background-color: var(--theme-bg);
     color: var(--theme-fg);
     line-height: var(--line-height);
 }
 
-/**
- * @media (max-width: 768px)
- * @description Mobile responsive breakpoint
- * @type {MediaQuery}
- * @condition Viewport width <= 768px
- * @override {string} --font-size-base - Font size: 14px
- */
 @media (max-width: 768px) {
     :root {
         --font-size-base: 14px;
     }
 }
 
-/**
- * @media (prefers-reduced-motion: reduce)
- * @description Accessibility: Reduced motion preference
- * @type {MediaQuery}
- * @condition User prefers reduced motion
- * @override {string} transition - Disable all transitions: none !important
- */
 @media (prefers-reduced-motion: reduce) {
     * {
         transition: none !important;
     }
 }
 
-/**
- * @media (prefers-contrast: high)
- * @description Accessibility: High contrast preference
- * @type {MediaQuery}
- * @condition User prefers high contrast
- * @override {string} --theme-border - Use currentColor for better contrast
- */
 @media (prefers-contrast: high) {
     :root {
         --theme-border: currentColor;
